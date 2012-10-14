@@ -8,11 +8,11 @@ WordPress e-commerce plugin
 3. In the Wordpress admin panel, click Settings > Store > Payments
 4. Check the Bitcoins payment option to activate it and click Update below.
 5. Click edit next to the Bitcoins payment option.
-    a) Edit Display Name if desired.
-    b) Create an API key at bitpay.com if you haven't already and set API
+    * Edit Display Name if desired.
+    * Create an API key at bitpay.com if you haven't already and set API
 Key to this value.
-    c) Change the Transaction Speed if desired (see information about
+    * Change the Transaction Speed if desired (see information about
 this in the API documentation at bitpay.com).
-    d) Click Update below.
+    * Click Update below.
 
 Tested against plugin version 3.8.8.5
