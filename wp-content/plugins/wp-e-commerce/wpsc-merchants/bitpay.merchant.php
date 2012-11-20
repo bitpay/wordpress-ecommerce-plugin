@@ -172,7 +172,7 @@ function bitpay_callback()
 				case 'confirmed':
 				case 'complete':
 					$sql = "UPDATE `".WPSC_TABLE_PURCHASE_LOGS.
-						"` SET `processed`= '2' WHERE `sessionid`=".$sessionid;
+						"` SET `processed`= '2' WHERE `sessionid`=".intval($sessionid);
 					$wpdb->query($sql);
 					break;
 			}
