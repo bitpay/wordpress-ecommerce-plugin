@@ -62,10 +62,10 @@ function bpCreateInvoice($orderId, $price, $posData, $options = array()) {
 	
 	$options = array_merge($bpOptions, $options);	// $options override any options found in bp_options.php
 	
-	$options['posData'] = '{"posData": "' . $posData . '"';
-	if ($bpOptions['verifyPos']) // if desired, a hash of the POS data is included to verify source in the callback
-		$options['posData'].= ', "hash": "' . crypt($posData, $options['apiKey']).'"';
-	$options['posData'].= '}';	
+	$pos = array('posData' => $posData);
+	if ($bpOptions['verifyPos'])
+		$pos['hash'] = crypt(serialize($posData), $options['apiKey']);
+	$options['posData'] = json_encode($pos);
 	
 	$options['orderID'] = $orderId;
 	$options['price'] = $price;
@@ -78,7 +78,9 @@ function bpCreateInvoice($orderId, $price, $posData, $options = array()) {
 			$post[$o] = $options[$o];
 	$post = json_encode($post);
 	
-	$response = bpCurl('https://bitpay.com/api/invoice/', $options['apiKey'], $post);
+	$response = bpCurl('https://bitpay.com/api/invoice/', $options['apiKey'], $post);	
+	if (is_string($response))
+		return array('error' => $response);	
 
 	return $response;
 }
@@ -91,19 +93,19 @@ function bpVerifyNotification($apiKey = false) {
 	
 	$post = file_get_contents("php://input");
 	if (!$post)
-		return 'No post data';
+		return array('error' => 'No post data');
 		
-	$json = json_decode($post, true);
-	
+	$json = json_decode($post, true);	
 	if (is_string($json))
-		return $json; // error
+		return array('error' => $json); // error
 
 	if (!array_key_exists('posData', $json)) 
-		return 'no posData';
+		return array('error' => 'no posData');
 		
+	// decode posData
 	$posData = json_decode($json['posData'], true);
-	if($bpOptions['verifyPos'] and $posData['hash'] != crypt($posData['posData'], $apiKey)) 
-		return 'authentication failed (bad hash)';
+	if($bpOptions['verifyPos'] and $posData['hash'] != crypt(serialize($posData['posData']), $apiKey)) 
+		return array('error' => 'authentication failed (bad hash)');
 	$json['posData'] = $posData['posData'];
 		
 	return $json;
@@ -117,8 +119,11 @@ function bpGetInvoice($invoiceId, $apiKey=false) {
 
 	$response = bpCurl('https://bitpay.com/api/invoice/'.$invoiceId, $apiKey);
 	if (is_string($response))
-		return $response; // error
+		return array('error' => $response); 
+	//decode posData
 	$response['posData'] = json_decode($response['posData'], true);
+	$response['posData'] = $response['posData']['posData'];
+
 	return $response;	
 }
 
