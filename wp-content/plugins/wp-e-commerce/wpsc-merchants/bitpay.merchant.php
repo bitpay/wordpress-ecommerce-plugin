@@ -6,6 +6,18 @@ $nzshpcrt_gateways[$num]['function'] = 'gateway_bitpay';
 $nzshpcrt_gateways[$num]['form'] = 'form_bitpay';
 $nzshpcrt_gateways[$num]['submit_function'] = "submit_bitpay";
 
+function debuglog($contents)
+{
+	$file = 'wp-content/plugins/wp-e-commerce/wpsc-merchants/bitpay/log.txt';
+	file_put_contents($file, date('m-d H:i:s').": ", FILE_APPEND);
+	if (is_array($contents))
+		file_put_contents($file, var_export($contents, true)."\n", FILE_APPEND);		
+	else if (is_object($contents))
+		file_put_contents($file, json_encode($contents)."\n", FILE_APPEND);
+	else
+		file_put_contents($file, $contents."\n", FILE_APPEND);
+}
+
 
 function form_bitpay()
 {	
@@ -108,7 +120,8 @@ function gateway_bitpay($seperator, $sessionid)
 
 	// more user info
 	foreach(array('billingphone' => 'buyerPhone', 'billingemail' => 'buyerEmail', 'billingcity' => 'buyerCity',  'billingcountry' => 'buyerCountry', 'billingpostcode' => 'buyerZip') as $f => $t)
-		$options[$t] = $userinfo[$f];
+		if ($userinfo[$f])
+			$options[$t] = $userinfo[$f];
 
 	// itemDesc
 	if (count($wpsc_cart->cart_items) == 1)
@@ -135,11 +148,16 @@ function gateway_bitpay($seperator, $sessionid)
 	$options['apiKey'] = get_option('bitpay_apikey');
 	$options['posData'] = $sessionid;
 	$options['fullNotifications'] = true;
+	
+	// truncate if longer than 100 chars
+	foreach(array("buyerName", "buyerAddress1", "buyerAddress2", "buyerCity", "buyerState", "buyerZip", "buyerCountry", "buyerEmail", "buyerPhone") as $k)
+		$options[$k] = substr($options[$k], 0, 100);
 		
 	$price = number_format($wpsc_cart->total_price,2);	
 	$invoice = bpCreateInvoice($sessionid, $price, $sessionid, $options);
 	
-	if ($invoice['error']) {
+	if (isset($invoice['error'])) {
+		debuglog($invoice);
 		// close order
 		$sql = "UPDATE `".WPSC_TABLE_PURCHASE_LOGS."` SET `processed`= '5' WHERE `sessionid`=".$sessionid;
 		$wpdb->query($sql);
@@ -150,6 +168,7 @@ function gateway_bitpay($seperator, $sessionid)
 		$wpsc_cart->empty_cart();
 		unset($_SESSION['WpscGatewayErrorMessage']);
 		header("Location: ".$invoice['url']);
+		exit();
 	}
 }
 
@@ -161,7 +180,10 @@ function bitpay_callback()
 		require('wp-content/plugins/wp-e-commerce/wpsc-merchants/bitpay/bp_lib.php');
 		
 		$response = bpVerifyNotification(get_option('bitpay_apikey'));
-		if (!is_string($response))
+		
+		if (isset($response['error']))
+			debuglog($response);
+		else
 		{
 			$sessionid = $response['posData'];
 
@@ -172,8 +194,9 @@ function bitpay_callback()
 				case 'confirmed':
 				case 'complete':
 					$sql = "UPDATE `".WPSC_TABLE_PURCHASE_LOGS.
-						"` SET `processed`= '2' WHERE `sessionid`=".intval($sessionid);
-					$wpdb->query($sql);
+						"` SET `processed`= '2' WHERE `sessionid`=".$sessionid;
+					if (is_numeric($sessionid))
+						$wpdb->query($sql);
 					break;
 			}
 		}
