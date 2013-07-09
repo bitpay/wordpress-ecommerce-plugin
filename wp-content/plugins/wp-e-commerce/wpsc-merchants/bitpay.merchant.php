@@ -38,7 +38,9 @@ function form_bitpay()
 		.'<option value="high" '.$sHigh.'>High</option>'
 		.'<option value="medium" '.$sMedium.'>Medium</option>'
 		.'<option value="low" '.$sLow.'>Low</option>'
-		.'</select>');
+		.'</select>', 'Speed at which the bitcoin transaction registers as "confirmed" to the store. This overrides your merchant settings on the Bitpay website.');
+
+	$rows[] = array('Redirect URL', '<input name="bitpay_redirect" type="text" value="'.get_option('bitpay_redirect').'" />', 'Put the URL that you want the buyer to be redirected to after payment.');
 		
 	foreach($rows as $r)
 	{
@@ -53,7 +55,7 @@ function form_bitpay()
 
 function submit_bitpay()
 {
-	$params = array('bitpay_apikey', 'bitpay_transaction_speed');
+	$params = array('bitpay_apikey', 'bitpay_transaction_speed', 'bitpay_redirect');
 	foreach($params as $p)
 		if ($_POST[$p] != null)
 			update_option($p, $_POST[$p]);
@@ -143,7 +145,7 @@ function gateway_bitpay($seperator, $sessionid)
 	$options['currency'] = $wpdb->get_var( $wpdb->prepare( "SELECT `code` FROM `".WPSC_TABLE_CURRENCY_LIST."` WHERE `id` = %d LIMIT 1", $currencyId ) );
 	
 	$options['notificationURL'] = get_option('siteurl')."/?bitpay_callback=true";
-	$options['redirectURL'] = get_option('siteurl');
+	$options['redirectURL'] = get_option('bitpay_redirect');
 	$options['transactionSpeed'] = get_option('bitpay_transaction_speed');	
 	$options['apiKey'] = get_option('bitpay_apikey');
 	$options['posData'] = $sessionid;
@@ -176,6 +178,7 @@ function bitpay_callback()
 {
 	if(isset($_GET['bitpay_callback']))
 	{
+		
 		global $wpdb;
 		require('wp-content/plugins/wp-e-commerce/wpsc-merchants/bitpay/bp_lib.php');
 		
@@ -189,14 +192,28 @@ function bitpay_callback()
 
 			switch($response['status'])
 			{
-				case 'paid':
+				case 'paid':	
+					$sql = "UPDATE `".WPSC_TABLE_PURCHASE_LOGS."` SET `processed`= '2' WHERE `sessionid`=".$sessionid;
+					if (is_numeric($sessionid)) {
+						$wpdb->query($sql);	
+					}
+					transaction_results($sessionid, true);		
 					break;
 				case 'confirmed':
+					if (get_option('bitpay_transaction_speed') == 'high') {
+						$sql = "UPDATE `".WPSC_TABLE_PURCHASE_LOGS."` SET `processed`= '2' WHERE `sessionid`=".$sessionid;
+						if (is_numeric($sessionid)) {
+							$wpdb->query($sql);	
+						}
+						transaction_results($sessionid, true);
+					}
+					break;
 				case 'complete':
-					$sql = "UPDATE `".WPSC_TABLE_PURCHASE_LOGS.
-						"` SET `processed`= '2' WHERE `sessionid`=".$sessionid;
-					if (is_numeric($sessionid))
+					$sql = "UPDATE `".WPSC_TABLE_PURCHASE_LOGS."` SET `processed`= '3' WHERE `sessionid`=".$sessionid;
+					if (is_numeric($sessionid)) {
 						$wpdb->query($sql);
+					}
+				    transaction_results($sessionid, true);
 					break;
 			}
 		}
