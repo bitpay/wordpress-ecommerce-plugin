@@ -26,6 +26,7 @@ WordPress e-commerce plugin
         Key to this value.
     * Change the Transaction Speed if desired (see information about
         this in the API documentation at bitpay.com).
+    * Input a URL to redirect customers to after they have paid the invoice (Transaction Results page, Your Account page, etc.)
     * Click Update below.
 
 Tested against plugin version 3.8.8.5
