@@ -244,4 +244,3 @@ function bitpay_callback()
 add_action('init', 'bitpay_callback');
 
 ?>
-
