@@ -197,7 +197,7 @@ function bitpay_callback()
 					if (is_numeric($sessionid)) {
 						$wpdb->query($sql);	
 					}
-					transaction_results($sessionid, true);		
+					transaction_results($sessionid, false);		
 					break;
 				case 'confirmed':
 					if (get_option('bitpay_transaction_speed') == 'high') {
@@ -205,7 +205,7 @@ function bitpay_callback()
 						if (is_numeric($sessionid)) {
 							$wpdb->query($sql);	
 						}
-						transaction_results($sessionid, true);
+						transaction_results($sessionid, false);
 					}
 					break;
 				case 'complete':
@@ -213,7 +213,7 @@ function bitpay_callback()
 					if (is_numeric($sessionid)) {
 						$wpdb->query($sql);
 					}
-				    transaction_results($sessionid, true);
+				    	transaction_results($sessionid, false);
 					break;
 			}
 		}
