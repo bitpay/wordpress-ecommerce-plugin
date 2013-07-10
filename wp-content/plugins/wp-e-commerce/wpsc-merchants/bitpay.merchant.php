@@ -1,7 +1,7 @@
 <?php
 
-$nzshpcrt_gateways[$num]['name'] = 'Bitcoins';
-$nzshpcrt_gateways[$num]['internalname'] = 'bitpay';
+$nzshpcrt_gateways[$num]['name'] = 'BitPay';
+$nzshpcrt_gateways[$num]['internalname'] = 'wpsc_merchant_bitpay';
 $nzshpcrt_gateways[$num]['function'] = 'gateway_bitpay';
 $nzshpcrt_gateways[$num]['form'] = 'form_bitpay';
 $nzshpcrt_gateways[$num]['submit_function'] = "submit_bitpay";
@@ -40,6 +40,8 @@ function form_bitpay()
 		.'<option value="low" '.$sLow.'>Low</option>'
 		.'</select>', 'Speed at which the bitcoin transaction registers as "confirmed" to the store. This overrides your merchant settings on the Bitpay website.');
 
+	//Allows the merchant to specify a URL to redirect to upon the customer completing payment on the bitpay.com
+	//invoice page. This is typcially the "Transaction Results" page.
 	$rows[] = array('Redirect URL', '<input name="bitpay_redirect" type="text" value="'.get_option('bitpay_redirect').'" />', 'Put the URL that you want the buyer to be redirected to after payment.');
 		
 	foreach($rows as $r)
@@ -139,13 +141,19 @@ function gateway_bitpay($seperator, $sessionid)
 			$quantity += $item->quantity;
 		$options['itemDesc'] = $quantity.' items';
 	}	
+
+	if( get_option( 'permalink_structure' ) != '' ) {
+		$separator = "?";
+	} else {
+		$separator = "&";
+	}
 	
 	//currency
 	$currencyId = get_option( 'currency_type' );
 	$options['currency'] = $wpdb->get_var( $wpdb->prepare( "SELECT `code` FROM `".WPSC_TABLE_CURRENCY_LIST."` WHERE `id` = %d LIMIT 1", $currencyId ) );
-	
 	$options['notificationURL'] = get_option('siteurl')."/?bitpay_callback=true";
-	$options['redirectURL'] = get_option('bitpay_redirect');
+	//pass sessionid along so that it can be used to populate the transaction results page
+	$options['redirectURL'] = get_option('bitpay_redirect').$separator."sessionid=".$sessionid;  
 	$options['transactionSpeed'] = get_option('bitpay_transaction_speed');	
 	$options['apiKey'] = get_option('bitpay_apikey');
 	$options['posData'] = $sessionid;
@@ -157,7 +165,7 @@ function gateway_bitpay($seperator, $sessionid)
 		
 	$price = number_format($wpsc_cart->total_price,2);	
 	$invoice = bpCreateInvoice($sessionid, $price, $sessionid, $options);
-	
+
 	if (isset($invoice['error'])) {
 		debuglog($invoice);
 		// close order
@@ -170,18 +178,22 @@ function gateway_bitpay($seperator, $sessionid)
 		$wpsc_cart->empty_cart();
 		unset($_SESSION['WpscGatewayErrorMessage']);
 		header("Location: ".$invoice['url']);
+		//select sessionid from wp_wpsc_purchase_logs ORDER BY id DESC LIMIT 1;
 		exit();
 	}
+
 }
 
 function bitpay_callback()
 {
+
 	if(isset($_GET['bitpay_callback']))
 	{
 		
 		global $wpdb;
 		require('wp-content/plugins/wp-e-commerce/wpsc-merchants/bitpay/bp_lib.php');
 		
+
 		$response = bpVerifyNotification(get_option('bitpay_apikey'));
 		
 		if (isset($response['error']))
@@ -192,32 +204,42 @@ function bitpay_callback()
 
 			switch($response['status'])
 			{
-				case 'paid':	
+				//For low and medium transaction speeds, the order status is set to "Order Received". 
+				//The customer will receive an "order pending" email.
+				case 'paid':
 					$sql = "UPDATE `".WPSC_TABLE_PURCHASE_LOGS."` SET `processed`= '2' WHERE `sessionid`=".$sessionid;
 					if (is_numeric($sessionid)) {
 						$wpdb->query($sql);	
 					}
-					transaction_results($sessionid, false);		
+					transaction_results($sessionid, false);	//false because this is just for email notification	
 					break;
+
+				//For low and medium transaction speeds, the order status will not change, and no additional email
+				//will be sent when the invoice status changes to "confirmed". For high transaction speed, the
+				//"order pending" email will be sent here, as the paid status is skipped on high transaction speed.
 				case 'confirmed':
 					if (get_option('bitpay_transaction_speed') == 'high') {
 						$sql = "UPDATE `".WPSC_TABLE_PURCHASE_LOGS."` SET `processed`= '2' WHERE `sessionid`=".$sessionid;
 						if (is_numeric($sessionid)) {
 							$wpdb->query($sql);	
 						}
-						transaction_results($sessionid, false);
+						transaction_results($sessionid, false); //false because this is just for email notification	
 					}
 					break;
+
+				//The purchase receipt email is sent upon the invoice status changing to "complete", and the order
+				//status is changed to Accepted Payment
 				case 'complete':
 					$sql = "UPDATE `".WPSC_TABLE_PURCHASE_LOGS."` SET `processed`= '3' WHERE `sessionid`=".$sessionid;
 					if (is_numeric($sessionid)) {
 						$wpdb->query($sql);
 					}
-				    	transaction_results($sessionid, false);
+				    transaction_results($sessionid, false); //false because this is just for email notification	
 					break;
 			}
 		}
 	}
+
 }
 
 add_action('init', 'bitpay_callback');
