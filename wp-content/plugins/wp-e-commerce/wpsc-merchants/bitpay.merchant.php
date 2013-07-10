@@ -178,7 +178,6 @@ function gateway_bitpay($seperator, $sessionid)
 		$wpsc_cart->empty_cart();
 		unset($_SESSION['WpscGatewayErrorMessage']);
 		header("Location: ".$invoice['url']);
-		//select sessionid from wp_wpsc_purchase_logs ORDER BY id DESC LIMIT 1;
 		exit();
 	}
 
@@ -245,3 +244,4 @@ function bitpay_callback()
 add_action('init', 'bitpay_callback');
 
 ?>
+
