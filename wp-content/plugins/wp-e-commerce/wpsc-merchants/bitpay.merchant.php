@@ -203,13 +203,14 @@ function bitpay_callback()
 			//get buyer email
 			$sql = "SELECT * FROM `" . WPSC_TABLE_PURCHASE_LOGS . "` WHERE `sessionid`=".$sessionid;
 			$purchase_log = $wpdb->get_results( $sql, ARRAY_A );
+			debuglog($purchase_log);
 			$email_form_field = $wpdb->get_var( "SELECT `id` FROM `" . WPSC_TABLE_CHECKOUT_FORMS . "` WHERE `type` IN ('email') AND `active` = '1' ORDER BY `checkout_order` ASC LIMIT 1" );
 			$email = $wpdb->get_var( $wpdb->prepare( "SELECT `value` FROM `" . WPSC_TABLE_SUBMITTED_FORM_DATA . "` WHERE `log_id` = %d AND `form_id` = %d LIMIT 1", $purchase_log[0]['id'], $email_form_field ) );
 
 			//get cart contents
 			$sql = "SELECT * FROM `" . WPSC_TABLE_CART_CONTENTS . "` WHERE `purchaseid`=".$purchase_log[0]['id'];
 			$cart_contents = $wpdb->get_results($sql, ARRAY_A);
-
+			debuglog($cart_contents);
 			//get currency symbol
 			$currency_id = get_option('currency_type');
 			$sql = "SELECT * FROM `" . WPSC_TABLE_CURRENCY_LIST . "` WHERE `id`=".$currency_id;
@@ -218,12 +219,25 @@ function bitpay_callback()
 
 			//list products and individual prices in the email
 			$message_product = "\r\n\r\nTransaction Details: \r\n\r\n";
+			$pnp = 0.0;
+			$subtotal = 0.0;
 			foreach($cart_contents as $product) {
+				$pnp += $product['pnp']; //shipping for each item
 				$message_product .= "x" . $product['quantity'] . " " . $product['name'] . " - " . $currency_symbol . $product['price']*$product['quantity'] . "\r\n";
+				$subtotal += $product['price']*$product['quantity'];
 			}
+
+			//list subtotal
+			$subtotal = number_format($subtotal , 2 , '.', ',');
+			$message_product .= "\r\n" . "Subtotal: " . $currency_symbol . $subtotal . "\r\n";
+
+			//list total taxes and total shipping costs in the email
+			$message_product .= "Taxes: " . $currency_symbol . $purchase_log[0]['wpec_taxes_total'] . "\r\n";
+			$message_product .= "Shipping: " . $currency_symbol . ($purchase_log[0]['base_shipping'] + $pnp) . "\r\n\r\n";
+
 		
 			//display total price in the email
-			$message_product .= "\r\n" . "Total Price: " . $currency_symbol . $purchase_log[0]['totalprice'];
+			$message_product .= "Total Price: " . $currency_symbol . $purchase_log[0]['totalprice'];
 
 			switch($response['status'])
 			{
