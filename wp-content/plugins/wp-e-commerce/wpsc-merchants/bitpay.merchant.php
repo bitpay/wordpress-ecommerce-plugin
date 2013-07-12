@@ -203,14 +203,14 @@ function bitpay_callback()
 			//get buyer email
 			$sql = "SELECT * FROM `" . WPSC_TABLE_PURCHASE_LOGS . "` WHERE `sessionid`=".$sessionid;
 			$purchase_log = $wpdb->get_results( $sql, ARRAY_A );
-			debuglog($purchase_log);
+			
 			$email_form_field = $wpdb->get_var( "SELECT `id` FROM `" . WPSC_TABLE_CHECKOUT_FORMS . "` WHERE `type` IN ('email') AND `active` = '1' ORDER BY `checkout_order` ASC LIMIT 1" );
 			$email = $wpdb->get_var( $wpdb->prepare( "SELECT `value` FROM `" . WPSC_TABLE_SUBMITTED_FORM_DATA . "` WHERE `log_id` = %d AND `form_id` = %d LIMIT 1", $purchase_log[0]['id'], $email_form_field ) );
 
 			//get cart contents
 			$sql = "SELECT * FROM `" . WPSC_TABLE_CART_CONTENTS . "` WHERE `purchaseid`=".$purchase_log[0]['id'];
 			$cart_contents = $wpdb->get_results($sql, ARRAY_A);
-			debuglog($cart_contents);
+			
 			//get currency symbol
 			$currency_id = get_option('currency_type');
 			$sql = "SELECT * FROM `" . WPSC_TABLE_CURRENCY_LIST . "` WHERE `id`=".$currency_id;

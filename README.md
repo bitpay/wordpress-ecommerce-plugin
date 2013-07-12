@@ -29,4 +29,4 @@ WordPress e-commerce plugin
     * Input a URL to redirect customers to after they have paid the invoice (Transaction Results page, Your Account page, etc.)
     * Click Update below.
 
-Tested against plugin version 3.8.8.5
+Tested against plugin version 3.8.12.1
