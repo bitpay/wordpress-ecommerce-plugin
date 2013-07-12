@@ -185,13 +185,12 @@ function gateway_bitpay($seperator, $sessionid)
 
 function bitpay_callback()
 {
-
+	
 	if(isset($_GET['bitpay_callback']))
 	{
-		
+	
 		global $wpdb;
 		require('wp-content/plugins/wp-e-commerce/wpsc-merchants/bitpay/bp_lib.php');
-		
 
 		$response = bpVerifyNotification(get_option('bitpay_apikey'));
 		
@@ -201,38 +200,94 @@ function bitpay_callback()
 		{
 			$sessionid = $response['posData'];
 
+			//get buyer email
+			$sql = "SELECT * FROM `" . WPSC_TABLE_PURCHASE_LOGS . "` WHERE `sessionid`=".$sessionid;
+			$purchase_log = $wpdb->get_results( $sql, ARRAY_A );
+			$email_form_field = $wpdb->get_var( "SELECT `id` FROM `" . WPSC_TABLE_CHECKOUT_FORMS . "` WHERE `type` IN ('email') AND `active` = '1' ORDER BY `checkout_order` ASC LIMIT 1" );
+			$email = $wpdb->get_var( $wpdb->prepare( "SELECT `value` FROM `" . WPSC_TABLE_SUBMITTED_FORM_DATA . "` WHERE `log_id` = %d AND `form_id` = %d LIMIT 1", $purchase_log[0]['id'], $email_form_field ) );
+
+			//get cart contents
+			$sql = "SELECT * FROM `" . WPSC_TABLE_CART_CONTENTS . "` WHERE `purchaseid`=".$purchase_log[0]['id'];
+			$cart_contents = $wpdb->get_results($sql, ARRAY_A);
+
+			//get currency symbol
+			$currency_id = get_option('currency_type');
+			$sql = "SELECT * FROM `" . WPSC_TABLE_CURRENCY_LIST . "` WHERE `id`=".$currency_id;
+			$currency_data = $wpdb->get_results($sql, ARRAY_A);
+			$currency_symbol = $currency_data[0]['symbol'];
+
+			//list products and individual prices in the email
+			$message_product = "\r\n\r\nTransaction Details: \r\n\r\n";
+			foreach($cart_contents as $product) {
+				$message_product .= "x" . $product['quantity'] . " " . $product['name'] . " - " . $currency_symbol . $product['price']*$product['quantity'] . "\r\n";
+			}
+		
+			//display total price in the email
+			$message_product .= "\r\n" . "Total Price: " . $currency_symbol . $purchase_log[0]['totalprice'];
+
 			switch($response['status'])
 			{
-				//For low and medium transaction speeds, the order status is set to "Order Received". 
-				//The customer will receive an "order pending" email.
+				//For low and medium transaction speeds, the order status is set to "Order Received". The customer receives
+				//an initial email stating that the transaction has been paid.
 				case 'paid':
+
 					$sql = "UPDATE `".WPSC_TABLE_PURCHASE_LOGS."` SET `processed`= '2' WHERE `sessionid`=".$sessionid;
 					if (is_numeric($sessionid)) {
 						$wpdb->query($sql);	
 					}
+
+					$message = "Thank you! Your payment has been received, but the transaction has not been confirmed on the bitcoin network. " .
+							   "You will receive another email when the transaction has been confirmed.";
+					$message .= $message_product;
+					wp_mail($email, "Payment Received", $message);
+
+					$sql = "UPDATE `".WPSC_TABLE_PURCHASE_LOGS."` SET `email_sent`= '1' WHERE `sessionid`=".$sessionid;
 					transaction_results($sessionid, false);	//false because this is just for email notification	
 					break;
 
-				//For low and medium transaction speeds, the order status will not change, and no additional email
-				//will be sent when the invoice status changes to "confirmed". For high transaction speed, the
-				//"order pending" email will be sent here, as the paid status is skipped on high transaction speed.
+				//For low and medium transaction speeds, the order status will not change. For high transaction speed, the order
+				//status is set to "Order Received" here. For all speeds, an email will be sent stating that the transaction has
+				//been confirmed.
 				case 'confirmed':
-					if (get_option('bitpay_transaction_speed') == 'high') {
-						$sql = "UPDATE `".WPSC_TABLE_PURCHASE_LOGS."` SET `processed`= '2' WHERE `sessionid`=".$sessionid;
-						if (is_numeric($sessionid)) {
-							$wpdb->query($sql);	
-						}
-						transaction_results($sessionid, false); //false because this is just for email notification	
+
+					$sql = "UPDATE `".WPSC_TABLE_PURCHASE_LOGS."` SET `processed`= '2' WHERE `sessionid`=".$sessionid;
+					if (is_numeric($sessionid)) {
+						$wpdb->query($sql);	
 					}
+
+					//display initial "thank you" if transaction speed is high, as the 'paid' status is skipped on high speed
+					if (get_option('bitpay_transaction_speed') == 'high') {
+						
+						$message = "Thank you! Your payment has been received, and the transaction has been confirmed on the bitcoin network. " .
+								   "You will receive another email when the transaction is complete.";
+						$message .= $message_product; 
+						wp_mail($email, "Payment Received", $message);
+
+					} else {
+
+						$message = "Your transaction has now been confirmed on the bitcoin network. " .
+								   "You will receive another email when the transaction is complete.";
+						wp_mail($email, "Transaction Confirmed", $message);
+
+					}
+
+					$sql = "UPDATE `".WPSC_TABLE_PURCHASE_LOGS."` SET `email_sent`= '1' WHERE `sessionid`=".$sessionid;
+					transaction_results($sessionid, false); //false because this is just for email notification	
 					break;
 
 				//The purchase receipt email is sent upon the invoice status changing to "complete", and the order
 				//status is changed to Accepted Payment
 				case 'complete':
+
 					$sql = "UPDATE `".WPSC_TABLE_PURCHASE_LOGS."` SET `processed`= '3' WHERE `sessionid`=".$sessionid;
 					if (is_numeric($sessionid)) {
 						$wpdb->query($sql);
 					}
+
+					$message = "Your transaction is now complete! Thank you for using BitPay!" ;
+				    wp_mail($email, "Transaction Complete", $message);
+
+				    $sql = "UPDATE `".WPSC_TABLE_PURCHASE_LOGS."` SET `email_sent`= '1' WHERE `sessionid`=".$sessionid;
 				    transaction_results($sessionid, false); //false because this is just for email notification	
 					break;
 			}
