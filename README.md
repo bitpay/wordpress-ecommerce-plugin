@@ -18,11 +18,11 @@ bitpayWordpress
 
 WordPress e-commerce plugin
 
-1. Install the Wordpress E-Commerce plugin from getshopped.org. This payment plugin requires the base E-Commerce plugin to function.
-2. Don't attempt to install this BitPay plugin through the Wordpress plugins control panel.  Extract the contents of this zip file into your Wordpress folder.  You can also extract the zip file on another computer and upload the files.
-3. Now log into the Wordpress admin panel, click Settings > Store > Payments
+1. Install the Wordpress E-Commerce plugin from getshopped.org. This payment plugin requires the base E-Commerce plugin to function because this bitpay file is extention to E-Commerce plugin.
+2. Don't attempt to install this BitPay plugin through the Wordpress plugins control panel.  Extract two contents of this zip file (bitpay folder and bitpay.merchant.php) into your Wordpress folder (wp-content/plugins/wp-e-commerce/wpsc-merchants).  You can also extract the zip file on another computer and upload the files.
+3. Now log into the Wordpress admin panel, click Settings > Store > Payments (Assuming you've already installed E-Commerce plugin).
 4. Check the Bitcoins payment option to activate it and click Update below.
-5. Click edit next to the Bitcoins payment option.
+5. Click edit next to the BitPay payment option.
     * Edit Display Name if desired.
     * Create an API key at bitpay.com if you haven't already and set API Key to this value.
     * Change the Transaction Speed if desired (see information about this in the API documentation at bitpay.com).
