@@ -13,16 +13,16 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
 
-bitpayWordpress
-===============
+BitPay with WordPress
+=====================
 
-WordPress e-commerce plugin
+WordPress e-Commerce plugin
 
-1. Install the Wordpress E-Commerce plugin from getshopped.org. This payment plugin requires the base E-Commerce plugin to function because this bitpay file is extention to E-Commerce plugin.
-2. Don't attempt to install this BitPay plugin through the Wordpress plugins control panel.  Extract two contents of this zip file (bitpay folder and bitpay.merchant.php) into your Wordpress folder (wp-content/plugins/wp-e-commerce/wpsc-merchants).  You can also extract the zip file on another computer and upload the files.
-3. Now log into the Wordpress admin panel, click Settings > Store > Payments (Assuming you've already installed E-Commerce plugin).
-4. Check the Bitcoins payment option to activate it and click Update below.
-5. Click edit next to the BitPay payment option.
+1. Install the WordPress e-Commerce plugin from www.getshopped.org. This payment method requires WP e-Commerce plugin to function because this BitPay file is extension to e-Commerce plugin.
+2. Don't attempt to install this BitPay file through the WordPress plugins control panel.  Extract two contents of this zip file (bitpay folder and bitpay.merchant.php) into your WordPress folder (wp-content/plugins/wp-e-commerce/wpsc-merchants).  You can also extract the zip file on another computer and upload the files.
+3. Now log into the WordPress admin panel, click Settings > Store > Payments (assuming you've already installed WP e-Commerce plugin).
+4. Check the BitPay payment option to activate it and click Update below.
+5. Click Settings below the BitPay payment option.
     * Edit Display Name if desired.
     * Create an API key at bitpay.com if you haven't already and set API Key to this value.
     * Change the Transaction Speed if desired (see information about this in the API documentation at bitpay.com).
@@ -32,4 +32,4 @@ WordPress e-commerce plugin
 
 Version
 -------
-Tested against plugin version 3.8.12.1
+Tested against WP e-Commerce plugin version 3.8.13.3
