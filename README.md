@@ -1,8 +1,8 @@
-©2012-2014 BIT-PAY LLC.
+<strong>©2012-2014 BITPAY, INC.</strong>
 
 Permission is hereby granted to any person obtaining a copy of this software
 and associated documentation for use and/or modification in association with
-the bit-pay.com service.
+the bitpay.com service.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -32,4 +32,5 @@ WordPress e-commerce plugin
 
 Version
 -------
-Tested against plugin version 3.8.12.1
+- Tested against plugin version 3.8.12.1
+- Added new HTTP header for version tracking
