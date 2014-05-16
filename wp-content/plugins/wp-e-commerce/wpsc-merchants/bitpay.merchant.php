@@ -8,14 +8,7 @@ $nzshpcrt_gateways[$num]['submit_function'] = "submit_bitpay";
 
 function debuglog($contents)
 {
-	$file = 'wp-content/plugins/wp-e-commerce/wpsc-merchants/bitpay/log.txt';
-	file_put_contents($file, date('m-d H:i:s').": ", FILE_APPEND);
-	if (is_array($contents))
-		file_put_contents($file, var_export($contents, true)."\n", FILE_APPEND);		
-	else if (is_object($contents))
-		file_put_contents($file, json_encode($contents)."\n", FILE_APPEND);
-	else
-		file_put_contents($file, $contents."\n", FILE_APPEND);
+	error_log($contents);
 }
 
 
