@@ -72,5 +72,5 @@ NOTE: When contacting support it will help us is you provide:
 
 Version
 -------
--Tested against WP e-Commerce plugin version 3.8.13.3
--Tested against Wordpress version 3.9.1 and WP e-Commerce plugin version 3.8.14.1
+* Tested against WP e-Commerce plugin version 3.8.13.3
+* Tested against Wordpress version 3.9.1 and WP e-Commerce plugin version 3.8.14.1
