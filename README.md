@@ -38,6 +38,38 @@ WordPress e-Commerce plugin
     * Click Update below.
 
 
+Troubleshooting
+----------------
+The official BitPay support website should always be your first reference for
+troubleshooting any problems you may encounter: https://support.bitpay.com
+
+The official WP e-Commerce Plugin documentation website might also be helpful
+if the problem you are experiencing is not directly related to the payment
+plugin: http://docs.getshopped.org/
+
+The latest version of this plugin can always be downloaded from the official BitPay
+repository located here:  https://github.com/bitpay/wordpress-ecommerce-plugin
+
+<strong>Other troubleshooting tips:</strong>
+
+1. Ensure a valid SSL certificate is installed on your server. Also ensure your root CA cert is
+   updated. If your CA cert is not current, you will see curl SSL verification errors.
+2. Verify that your web server is not blocking POSTs from servers it may not recognize. Double
+   check this on your firewall as well, if one is being used.
+3. Check the system error log file (usually the web server error log) for any errors during BitPay 
+   payment attempts. If you contact BitPay support, they will ask to see the log file to help diagnose 
+   the problem.
+4. Check the version of this plugin against the official plugin repository to ensure you are using
+   the latest version. Your issue might have been addressed in a newer version!
+5. If all else fails, send an email describing your issue *in detail* to support@bitpay.com
+
+NOTE: When contacting support it will help us is you provide:
+* Wordpress Version
+* WP e-Commerce Version
+* Other plugins you have installed
+
+
+
 Version
 -------
 -Tested against WP e-Commerce plugin version 3.8.13.3
