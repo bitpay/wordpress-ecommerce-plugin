@@ -8,7 +8,12 @@ $nzshpcrt_gateways[$num]['submit_function'] = "submit_bitpay";
 
 function debuglog($contents)
 {
-	error_log($contents);
+	if(isset($contents)) {
+		if(is_resource($contents))
+			error_log(serialize($contents));
+		else
+			error_log(var_export($contents, true));
+	}
 }
 
 
