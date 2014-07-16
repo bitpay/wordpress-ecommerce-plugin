@@ -49,6 +49,10 @@ NOTE: When contacting support it will help us if you provide:
 * WP e-Commerce Version
 * Other plugins you have installed
 
+# Contribute
+
+To contribute to this project, please fork and submit a pull request.
+
 # License
 
 The MIT License (MIT)
