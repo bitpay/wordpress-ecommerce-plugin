@@ -1,4 +1,4 @@
-# bitpay/wordpress-ecommerce-plugin
+bitpay/wordpress-ecommerce-plugin
 ===================================
 
 # Installation
