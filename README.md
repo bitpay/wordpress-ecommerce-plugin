@@ -44,7 +44,7 @@ repository located here:  https://github.com/bitpay/wordpress-ecommerce-plugin
 4. Check the version of this plugin against the official plugin repository to ensure you are using the latest version. Your issue might have been addressed in a newer version!
 5. If all else fails, send an email describing your issue *in detail* to support@bitpay.com
 
-NOTE: When contacting support it will help us is you provide:
+NOTE: When contacting support it will help us if you provide:
 * Wordpress Version
 * WP e-Commerce Version
 * Other plugins you have installed
