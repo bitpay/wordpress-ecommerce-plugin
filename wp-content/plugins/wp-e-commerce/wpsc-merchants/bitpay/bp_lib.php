@@ -46,7 +46,7 @@ function bpCurl($url, $apiKey, $post = false)
 	$header = array(
 			'Content-Type: application/json',
 			'Content-Length: ' . $length,
-			'Authorization: Basic . ' $uname,
+			'Authorization: Basic . ' . $uname,
 			);
 
 	curl_setopt($curl, CURLOPT_PORT, 443);
