@@ -24,11 +24,20 @@
  * THE SOFTWARE.
  */
 
-$nzshpcrt_gateways[$num]['name']            = 'BitPay';
-$nzshpcrt_gateways[$num]['internalname']    = 'wpsc_merchant_bitpay';
-$nzshpcrt_gateways[$num]['function']        = 'gateway_bitpay';
-$nzshpcrt_gateways[$num]['form']            = 'form_bitpay';
-$nzshpcrt_gateways[$num]['submit_function'] = 'submit_bitpay';
+$nzshpcrt_gateways[$num] = array(
+		'name'                                    => __( 'Bitcoin Payments by BitPay', 'wpsc' ),
+		'api_version'                             => 1.0,
+		'image'                                   => WPSC_URL . '/images/bitcoin.png',
+		'has_recurring_billing'                   => false,
+		'wp_admin_cannot_cancel'                  => true,
+		'display_name'                            => __( 'Bitcoin', 'wpsc' ),
+		'user_defined_name[wpsc_merchant_bitpay]' => 'Bitcoin',
+		'requirements'                            => array('php_version' => 5.3),
+		'internalname'                            => 'wpsc_merchant_bitpay',
+		'form'                                    => 'form_bitpay',
+		'submit_function'                         => 'submit_bitpay',
+		'function'                                => 'gateway_bitpay',
+		);
 
 function debuglog($contents)
 {
@@ -41,16 +50,35 @@ function debuglog($contents)
 	}
 }
 
-
 function form_bitpay()
 {	
 	$rows = array();
 	
-	// API key
+	// API Key
 	$rows[] = array(
-			'API key',
+			'API Key',
 			'<input name="bitpay_apikey" type="text" value="' . get_option('bitpay_apikey') . '" />',
-			'Create this at bitpay.com.'
+			'<p class="description">Log into your merchant account at <a href="https://bitpay.com" target="_blank">https://bitpay.com</a> if you do not have one already. Click on "My Account" -> "API Access Keys" -> "Add New API Key".  Copy the long string of letters and numbers into this box.</p>'
+			);
+
+	// API Mode
+	$test = $live = '';
+
+	switch (get_option('bitpay_testmode')) {
+		case 'false':
+			$live = 'selected="selected"';
+			break;
+		case 'true':
+			$test = 'selected="selected"';
+			break;
+		default:
+			$live = 'selected="selected"';
+	}
+
+	$rows[] = array(
+			'API Mode',
+			'<select name="bitpay_testmode"><option value="false" ' . $live . '>Live</option><option value="true" ' . $test . '>Test</option></select>',
+			'<p class="description">Select whether you are using a Test API Key or a Live API Key.  You can sign up for a test key at <a href="https://test.bitpay.com" target="_blank">https://test.bitpay.com</a>.</p>'
 			);
 
 	// transaction speed
@@ -58,20 +86,22 @@ function form_bitpay()
 
 	switch (get_option('bitpay_transaction_speed')) {
 		case 'high':
-			$sHigh = 'selected="selected"';
+			$sHigh   = 'selected="selected"';
 			break;
 		case 'medium':
 			$sMedium = 'selected="selected"';
 			break;
 		case 'low':
-			$sLow = 'selected="selected"';
+			$sLow    = 'selected="selected"';
 			break;
+		default:
+			$sLow    = 'selected="selected"';
 	}
 
 	$rows[] = array(
 			'Transaction Speed',
 			'<select name="bitpay_transaction_speed"><option value="high" ' . $sHigh . '>High</option><option value="medium" ' . $sMedium . '>Medium</option><option value="low" ' . $sLow . '>Low</option></select>',
-			'Speed at which the bitcoin transaction registers as "confirmed" to the store. This overrides your merchant settings on the Bitpay website.'
+			'<p class="description">Speed at which the Bitcoin payment registers as "confirmed" to the store: High = Instant, Medium = ~10m, Low = ~1hr (safest).<p>'
 			);
 
 	//Allows the merchant to specify a URL to redirect to upon the customer completing payment on the bitpay.com
@@ -79,17 +109,26 @@ function form_bitpay()
 	$rows[] = array(
 			'Redirect URL',
 			'<input name="bitpay_redirect" type="text" value="' . get_option('bitpay_redirect') . '" />',
-			'Put the URL that you want the buyer to be redirected to after payment.'
+			'<p class="description"><strong>Important!</strong> Put the URL that you want the buyer to be redirected to after payment. This is usually a "Thanks for your order!" page.</p>'
 			);
-		
+
+	$output .= '
+	<tr>
+		<td colspan="2">
+			<p class="description">
+				<img src="' . WPSC_URL . '/images/bitcoin.png" /><br /><strong>For 24/7 support, please visit our website <a href="https://bitpay.com" target="_blank">https://bitpay.com</a> or send an email to <a href="mailto:support@bitpay.com" target="_blank">support@bitpay.com</a> for immediate attention. Thank you for choosing BitPay!</strong>
+			</p>
+		</td>
+	</tr>' . "\n";
+
 	foreach ($rows as $r) {
 		$output .= '<tr> <td>' . $r[0] . '</td> <td>' . $r[1];
 
 		if (isset($r[2])) {
-			$output .= '<BR/><small>' . $r[2] . '</small></td> ';
+			$output .= $r[2];
 		}
 
-		$output .= '</tr>';
+		$output .= '</td></tr>';
 	}
 	
 	return $output;
@@ -97,16 +136,19 @@ function form_bitpay()
 
 function submit_bitpay()
 {
-	$params = array(
-			'bitpay_apikey',
-			'bitpay_transaction_speed',
-			'bitpay_redirect'
-			);
+	if (isset($_POST['submit']) && stristr($_POST['submit'], 'Update') !== false) {
+		$params = array(
+				'bitpay_apikey',
+				'bitpay_testmode',
+				'bitpay_transaction_speed',
+				'bitpay_redirect'
+				);
 
-	foreach($params as $p) {
-		if ($_POST[$p] != null) {
-			if (!update_option($p, $_POST[$p])) {
-				return false;
+		foreach ($params as $p) {
+			if ($_POST[$p] != null) {
+				update_option($p, $_POST[$p]);
+			} else {
+				add_settings_error($p, 'error', __('The setting ' . $p . ' cannot be blank! Please enter a value for this field', 'wpse'), 'error');
 			}
 		}
 	}
@@ -196,7 +238,7 @@ function gateway_bitpay($seperator, $sessionid)
 
 	} else {
 
-		foreach($wpsc_cart->cart_items as $item) {
+		foreach ($wpsc_cart->cart_items as $item) {
 			$quantity += $item->quantity;
 		}
 		
@@ -211,9 +253,11 @@ function gateway_bitpay($seperator, $sessionid)
 	
 	//currency
 	$currencyId = get_option('currency_type');
-
 	$options['currency']          = $wpdb->get_var($wpdb->prepare("SELECT `code` FROM `" . WPSC_TABLE_CURRENCY_LIST . "` WHERE `id` = %d LIMIT 1", $currencyId));
 	$options['notificationURL']   = get_option('siteurl') . '/?bitpay_callback=true';
+
+	// Test or Live mode URL switch
+	$options['testMode']          = get_option('test_mode');
 
 	//pass sessionid along so that it can be used to populate the transaction results page
 	$options['redirectURL']       = get_option('bitpay_redirect') . $separator . 'sessionid=' . $sessionid;
@@ -254,7 +298,6 @@ function gateway_bitpay($seperator, $sessionid)
 
 function bitpay_callback()
 {
-	
 	if (isset($_GET['bitpay_callback'])) {
 		global $wpdb;
 
@@ -290,7 +333,7 @@ function bitpay_callback()
 			$pnp      = 0.0;
 			$subtotal = 0.0;
 
-			foreach($cart_contents as $product) {
+			foreach ($cart_contents as $product) {
 				$pnp += $product['pnp']; //shipping for each item
 				$message_product .= 'x' . $product['quantity'] . ' ' . $product['name'] . ' - ' . $currency_symbol . ($product['price'] * $product['quantity']) . "\r\n";
 				$subtotal += $product['price']*$product['quantity'];
@@ -307,7 +350,7 @@ function bitpay_callback()
 			//display total price in the email
 			$message_product .= 'Total Price: ' . $currency_symbol . $purchase_log[0]['totalprice'];
 
-			switch($response['status']) {
+			switch ($response['status']) {
 				//For low and medium transaction speeds, the order status is set to "Order Received". The customer receives
 				//an initial email stating that the transaction has been paid.
 				case 'paid':
@@ -376,9 +419,6 @@ function bitpay_callback()
 			}
 		}
 	}
-
 }
 
 add_action('init', 'bitpay_callback');
-
-?>
