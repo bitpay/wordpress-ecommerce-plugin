@@ -253,9 +253,11 @@ function gateway_bitpay($seperator, $sessionid)
 	
 	//currency
 	$currencyId = get_option('currency_type');
-
 	$options['currency']          = $wpdb->get_var($wpdb->prepare("SELECT `code` FROM `" . WPSC_TABLE_CURRENCY_LIST . "` WHERE `id` = %d LIMIT 1", $currencyId));
 	$options['notificationURL']   = get_option('siteurl') . '/?bitpay_callback=true';
+
+	// Test or Live mode URL switch
+	$options['testMode']          = get_option('test_mode');
 
 	//pass sessionid along so that it can be used to populate the transaction results page
 	$options['redirectURL']       = get_option('bitpay_redirect') . $separator . 'sessionid=' . $sessionid;
