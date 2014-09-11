@@ -43,14 +43,32 @@ function debuglog($contents)
 
 
 function form_bitpay()
-{	
+{
 	$rows = array();
-	
+
 	// API key
 	$rows[] = array(
 			'API key',
-			'<input name="bitpay_apikey" type="text" value="' . get_option('bitpay_apikey') . '" />',
+			'<input name="bitpay_apikey" type="text" value="' . get_option('bitpay_apikey') . '" required/>',
 			'Create this at bitpay.com.'
+			);
+
+	// API Mode
+	$test = $live = '';
+
+	switch (get_option('test_mode')) {
+		case 'false':
+			$live = 'selected="selected"';
+			break;
+		case 'true':
+			$test = 'selected="selected"';
+			break;
+	}
+
+	$rows[] = array(
+			'API Mode',
+			'<select name="test_mode"><option value=false ' . $live . '>Live</option><option value=true ' . $test . '>Test</option></select>',
+			'Select whether you are using a Test API Key or a Live API Key'
 			);
 
 	// transaction speed
@@ -78,10 +96,12 @@ function form_bitpay()
 	//invoice page. This is typcially the "Transaction Results" page.
 	$rows[] = array(
 			'Redirect URL',
-			'<input name="bitpay_redirect" type="text" value="' . get_option('bitpay_redirect') . '" />',
+			'<input name="bitpay_redirect" type="text" value="' . get_option('bitpay_redirect') . '" required/>',
 			'Put the URL that you want the buyer to be redirected to after payment.'
 			);
 		
+	$output = '';
+
 	foreach ($rows as $r) {
 		$output .= '<tr> <td>' . $r[0] . '</td> <td>' . $r[1];
 
@@ -97,17 +117,21 @@ function form_bitpay()
 
 function submit_bitpay()
 {
+	
 	$params = array(
 			'bitpay_apikey',
+			'test_mode',
 			'bitpay_transaction_speed',
 			'bitpay_redirect'
 			);
 
+	
+
 	foreach($params as $p) {
 		if ($_POST[$p] != null) {
-			if (!update_option($p, $_POST[$p])) {
-				return false;
-			}
+
+			update_option($p, $_POST[$p]);
+	
 		}
 	}
 
@@ -220,6 +244,7 @@ function gateway_bitpay($seperator, $sessionid)
 
 	$options['transactionSpeed']  = get_option('bitpay_transaction_speed');
 	$options['apiKey']            = get_option('bitpay_apikey');
+	$options['testMode']          = get_option('test_mode');
 	$options['posData']           = $sessionid;
 	$options['fullNotifications'] = true;
 	
@@ -228,8 +253,10 @@ function gateway_bitpay($seperator, $sessionid)
 		$options[$k] = substr($options[$k], 0, 100);
 	}
 
-	$price   = number_format($wpsc_cart->total_price, 2);	
+	$price   = number_format($wpsc_cart->total_price, 2);
 	$invoice = bpCreateInvoice($sessionid, $price, $sessionid, $options);
+
+	debuglog($invoice);
 
 	if (isset($invoice['error'])) {
 		debuglog($invoice);

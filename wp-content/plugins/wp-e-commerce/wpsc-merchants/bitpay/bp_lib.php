@@ -46,7 +46,7 @@ function bpCurl($url, $apiKey, $post = false)
 	$header = array(
 			'Content-Type: application/json',
 			'Content-Length: ' . $length,
-			'Authorization: Basic . ' $uname,
+			'Authorization: Basic ' . $uname,
 			);
 
 	curl_setopt($curl, CURLOPT_PORT, 443);
@@ -116,7 +116,9 @@ function bpCreateInvoice($orderId, $price, $posData, $options = array())
 
 	$post = json_encode($post);
 	
-	$response = bpCurl('https://bitpay.com/api/invoice/', $options['apiKey'], $post);
+	error_log('test mode is ' . $options['testMode']);
+
+	$response = bpCurl('https://'.($options['testMode'] ? 'test.' : '').'bitpay.com/api/invoice/', $options['apiKey'], $post);
 
 	if (is_string($response)) {
 		return array('error' => $response);	
@@ -171,7 +173,7 @@ function bpGetInvoice($invoiceId, $apiKey = false)
 		$apiKey = $bpOptions['apiKey'];		
 	}
 
-	$response = bpCurl('https://bitpay.com/api/invoice/'.$invoiceId, $apiKey);
+	$response = bpCurl('https://'.($options['testMode'] ? 'test.' : '').'bitpay.com/api/invoice/'.$invoiceId, $apiKey);
 
 	if (is_string($response)) {
 		return array('error' => $response);
