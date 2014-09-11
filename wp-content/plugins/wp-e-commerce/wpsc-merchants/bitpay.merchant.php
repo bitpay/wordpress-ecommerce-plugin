@@ -96,10 +96,10 @@ function form_bitpay()
 		$output .= '<tr> <td>' . $r[0] . '</td> <td>' . $r[1];
 
 		if (isset($r[2])) {
-			$output .= $r[2] . '</td> ';
+			$output .= $r[2];
 		}
 
-		$output .= '</tr>';
+		$output .= '</td></tr>';
 	}
 	
 	return $output;
