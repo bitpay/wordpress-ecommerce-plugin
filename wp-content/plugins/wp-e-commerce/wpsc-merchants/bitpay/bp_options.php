@@ -49,4 +49,6 @@ $bpOptions['fullNotifications'] = 'true';
 
 $bpOptions['transactionSpeed'] = 'low'; 
 
+$bpOptions['testMode'] = 'false'; 
+
 ?>
