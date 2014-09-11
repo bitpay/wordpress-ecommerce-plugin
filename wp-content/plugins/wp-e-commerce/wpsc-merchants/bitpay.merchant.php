@@ -107,17 +107,19 @@ function form_bitpay()
 
 function submit_bitpay()
 {
-	$params = array(
-			'bitpay_apikey',
-			'bitpay_transaction_speed',
-			'bitpay_redirect'
-			);
+	if(isset($_POST['submit']) && stristr($_POST['submit'], 'Update') !== false) {
+		$params = array(
+				'bitpay_apikey',
+				'bitpay_transaction_speed',
+				'bitpay_redirect'
+				);
 
-	foreach($params as $p) {
-		if ($_POST[$p] != null) {
-			update_option($p, $_POST[$p]);
-		} else {
-			add_settings_error($p, 'error', __('The setting '.$p.' cannot be blank! Please enter a value for this field', 'wpse'), 'error');
+		foreach($params as $p) {
+			if ($_POST[$p] != null) {
+				update_option($p, $_POST[$p]);
+			} else {
+				add_settings_error($p, 'error', __('The setting '.$p.' cannot be blank! Please enter a value for this field', 'wpse'), 'error');
+			}
 		}
 	}
 
