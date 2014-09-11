@@ -26,11 +26,11 @@
 
 $nzshpcrt_gateways[$num] = array(
 		'name'                                    => __( 'Bitcoin Payments by BitPay', 'wpsc' ),
-		'api_version'                             => 2.0,
+		'api_version'                             => 1.0,
 		'image'                                   => WPSC_URL . '/images/bitcoin.png',
 		'has_recurring_billing'                   => false,
 		'wp_admin_cannot_cancel'                  => true,
-		'display_name'                            => __( 'Bitcoin Payments by BitPay', 'wpsc' ),
+		'display_name'                            => __( 'Bitcoin', 'wpsc' ),
 		'user_defined_name[wpsc_merchant_bitpay]' => 'Bitcoin',
 		'requirements'                            => array('php_version' => 5.3),
 		'internalname'                            => 'wpsc_merchant_bitpay',
