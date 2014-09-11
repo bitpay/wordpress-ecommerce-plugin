@@ -111,7 +111,16 @@ function form_bitpay()
 			'<input name="bitpay_redirect" type="text" value="' . get_option('bitpay_redirect') . '" />',
 			'<p class="description"><strong>Important!</strong> Put the URL that you want the buyer to be redirected to after payment. This is usually a "Thanks for your order!" page.</p>'
 			);
-		
+
+	$output .= '
+	<tr>
+		<td colspan="2">
+			<p class="description">
+				<img src="' . WPSC_URL . '/images/bitcoin.png" /><br /><strong>For 24/7 support, please visit our website <a href="https://bitpay.com" target="_blank">https://bitpay.com</a> or send an email to <a href="mailto:support@bitpay.com" target="_blank">support@bitpay.com</a> for immediate attention. Thank you for choosing BitPay!</strong>
+			</p>
+		</td>
+	</tr>' . "\n";
+
 	foreach ($rows as $r) {
 		$output .= '<tr> <td>' . $r[0] . '</td> <td>' . $r[1];
 
