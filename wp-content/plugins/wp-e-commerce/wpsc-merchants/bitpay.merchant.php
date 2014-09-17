@@ -158,7 +158,7 @@ function submit_bitpay()
 
 function gateway_bitpay($seperator, $sessionid)
 {
-	require('wp-content/plugins/wp-e-commerce/wpsc-merchants/bitpay/bp_lib.php');
+	include_once dirname(__FILE__).'/bitpay/bp_lib.php';
 	
 	//$wpdb is the database handle,
 	//$wpsc_cart is the shopping cart object
@@ -255,6 +255,7 @@ function gateway_bitpay($seperator, $sessionid)
 	$currencyId = get_option('currency_type');
 	$options['currency']          = $wpdb->get_var($wpdb->prepare("SELECT `code` FROM `" . WPSC_TABLE_CURRENCY_LIST . "` WHERE `id` = %d LIMIT 1", $currencyId));
 	$options['notificationURL']   = get_option('siteurl') . '/?bitpay_callback=true';
+	error_log("URL is " . $options['notificationURL']);
 
 	// Test or Live mode URL switch
 	$options['testMode']          = get_option('test_mode');
@@ -301,8 +302,8 @@ function bitpay_callback()
 	if (isset($_GET['bitpay_callback'])) {
 		global $wpdb;
 
-		require('wp-content/plugins/wp-e-commerce/wpsc-merchants/bitpay/bp_lib.php');
-
+		include_once dirname(__FILE__).'/bitpay/bp_lib.php';
+		error_log("Notification URL hit");
 		$response = bpVerifyNotification(get_option('bitpay_apikey'));
 		
 		if (isset($response['error'])) {
