@@ -85,5 +85,8 @@ mkdir wpsc-merchants/bitpay/lib
 cp -avr src/assets wpsc-merchants/bitpay
 cp -avr src/templates wpsc-merchants/bitpay
 cp src/bitpay.merchant.php wpsc-merchants/
+cp LICENSE wpsc-merchants/
+cp README.md wpsc-merchants/
+cp CHANGELOG wpsc-merchants/
 cp -avr vendor/bitpay/php-client/src/* wpsc-merchants/bitpay/lib
 cp -avr wpsc-merchants/* wordpress/wp-content/plugins/wp-e-commerce/wpsc-merchants

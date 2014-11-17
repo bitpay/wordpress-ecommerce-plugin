@@ -10,7 +10,7 @@ WordPress e-Commerce plugin
 - Install the WordPress e-Commerce plugin from www.getshopped.org. This payment method requires the WP e-Commerce plugin to function because this BitPay file is an extension to the e-Commerce plugin.
 - Don't attempt to install this BitPay file through the WordPress plugins control panel. 
 - Extract the contents of the zip file.
-- Copy and paste the folder wpsc-merchants folder into your active WP eCommerce instance (ie `/var/www/html/wordpress/wp-content/plugins/wp-e-commerce`).
+- Copy the wpsc-merchants folder and paste it into your active WP eCommerce instance (ie `/var/www/html/wordpress/wp-content/plugins/wp-e-commerce`).
 
 # Installation From GitHub
 
