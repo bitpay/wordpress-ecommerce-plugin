@@ -1,0 +1,9 @@
+# .travis.yml
+language: php
+php:
+  - 5.5
+before_script:
+  - echo "USE mysql;\nUPDATE user SET password=PASSWORD('bitpay') WHERE user='root';\nFLUSH PRIVILEGES;\n" | mysql -u root
+script: ./setup
+after_script:
+  - bin/phpunit
