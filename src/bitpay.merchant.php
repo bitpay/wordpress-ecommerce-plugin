@@ -694,12 +694,12 @@ function gateway_bitpay($seperator, $sessionid)
      * keys.
      */
     $client->setToken($token);
-
+    $transaction = true;
     // Send invoice
     try {
         $client->createInvoice($invoice);
     } catch (Exception $e) {
-        debuglog($e->getMessage());
+        debuglog($e->getMessage()));
         var_dump("Error Processing Transaction. Please try again later. If the problem persists, please contact us at ".get_option('admin_email'));
         $transaction = false;
         $wpdb->query("UPDATE {$wpdb->prefix}bitpay_keys SET `paired` = 'false' WHERE `id` = {$row_id}");
