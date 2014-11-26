@@ -422,12 +422,8 @@ function submit_bitpay()
         $wpdb->query("DELETE FROM {$wpdb->prefix}bitpay_keys WHERE `id` = {$id}");
 
         $tokens_in_use = $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}bitpay_keys WHERE `facade` = '{$facade}' AND `in_use` = 'true'");
-        if ($is_revoked_in_use === 'false') {
-            $in_use = 'false';
-        } else {
-            $in_use = (($tokens_in_use) > 0) ? 'false' : 'true';
-        }
-        $wpdb->query("UPDATE {$wpdb->prefix}bitpay_keys SET `in_use` = '{$in_use}' WHERE `facade` = '{$facade}' LIMIT 1");
+        $use_sql = (($tokens_in_use) > 0) ? '' : "`in_use` = 'true'";
+        $wpdb->query("UPDATE {$wpdb->prefix}bitpay_keys SET {$use_sql} WHERE `facade` = '{$facade}' LIMIT 1");
     }
 
     //When the Disable for all button is pressed
@@ -658,11 +654,12 @@ function gateway_bitpay($seperator, $sessionid)
         } else {
             $separator = "&";
         }
-        if (!is_null(get_option('bitpay_redirect'))) {
-            $redirect_url = update_option('bitpay_redirect', get_site_url());
-        } else {
-            $redirect_url = get_option('bitpay_redirect').$separator.'sessionid='.$sessionid;
+
+        if (is_null(get_option('bitpay_redirect'))) {
+            update_option('bitpay_redirect', get_site_url());
         }
+        $redirect_url = get_option('bitpay_redirect');
+
         $invoice->setRedirectUrl($redirect_url);
 
         // PosData
