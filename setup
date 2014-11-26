@@ -72,6 +72,7 @@ echo 'CREATE TABLE IF NOT EXISTS `wptests_bitpay_keys` (
        `user_id` varchar(250) not null,
        `enable_all` varchar(250) not null,
        `in_use` varchar(250) not null,
+       `paired` varchar(250) not null,
        `created_at` datetime not null,
        PRIMARY KEY (`id`)
        ) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;' >> bitpay_table.sql

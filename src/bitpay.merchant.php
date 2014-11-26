@@ -88,6 +88,7 @@ function create_table()
        `user_id` varchar(250) not null,
        `enable_all` varchar(250) not null,
        `in_use` varchar(250) not null,
+       `paired` varchar(250) not null,
        `created_at` datetime not null,
        PRIMARY KEY (`id`)
        ) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;";
@@ -143,10 +144,6 @@ function create_client($network, $public, $private)
 
 function pairing($pairing_code, $client, $sin)
 {
-    /**
-     *PAIRING
-     */
-
     //Create Token
     try {
         // @var \Bitpay\TokenInterface
@@ -208,6 +205,7 @@ function save_keys($token, $network, $private, $public, $sin)
         'user_id'      => $user_ID,
         'enable_all'  => $enable_all,
         'in_use'      => $in_use,
+        'paired'      => "true",
         'created_at'  => current_time('mysql'),
     );
 
@@ -263,6 +261,8 @@ function form_bitpay()
     $row = '<div id="accordion">';
     //For each row on the bitpay_keys table
     foreach ($tablerows as $tablerow) {
+        //Token's row id
+        $row_id = $tablerow->id;
         //Get the facade
         $facade = $tablerow->facade;
         //Get the network
@@ -275,6 +275,8 @@ function form_bitpay()
         $enable_all = $tablerow->enable_all;
         //Get visibility status to other users
         $creator_id = $tablerow->user_id;
+        //Token's row id
+        $is_paired = $tablerow->paired;
 
         //Enable_all status button
         $enable_for_all = $just_me = '';
@@ -288,16 +290,22 @@ function form_bitpay()
         }
         //in_use status button. If in_use the header is green.
         $in_use = $tablerow->in_use;
-        switch ($in_use) {
-            case 'true':
-                $in_use = 'This token is being used.';
-                $use_color = '<font color="#00FF00">●</font>';
-                break;
-            case 'false':
-                $in_use = '<button type="submit" name="in_use" value="'.$tablerow->id.'">Use me</button>';
-                $use_color = '<font color="#FF0000">●</font>';
-                break;
+        if ($is_paired === "true") {
+            switch ($in_use) {
+                case 'true':
+                    $in_use = 'This token is being used.';
+                    $use_color = '<font color="#00FF00">●</font>';
+                    break;
+                case 'false':
+                    $in_use = '<button type="submit" name="in_use" value="'.$tablerow->id.'">Use me</button>';
+                    $use_color = '<font color="#FF0000">●</font>';
+                    break;
+            }
+        } else {
+            $in_use = 'This token is not paired with BitPay any longer.';
+            $use_color = '<font color="#FF0000">●</font>';
         }
+
 
         //Revoke token button
         $revoke_token = '<button type="submit" id="revoke_key" name="revoke_key" onClick="var result = confirm('."'Are you sure you wish to revoke the key pair?'".'); return result;" value="'.$tablerow->id.'"><font color="red">Ø</font></button>';
@@ -311,7 +319,7 @@ function form_bitpay()
 
         //Display the token info on the settings page
         $row .=
-                '<h3>'.$facade.' - '.$network.' '.$use_color.'</h3>
+                '<h3>'.$row_id.' - '.$facade.' - '.$network.' '.$use_color.'</h3>
                 <div>
                 <p>
                 Facade: '.$facade.'<br />
@@ -475,229 +483,239 @@ function gateway_bitpay($seperator, $sessionid)
     $fingerprint = \Bitpay\Util\Fingerprint::generate();
     $fingerprint = substr($fingerprint, 0, 24);
     //Use token that is in_use and with facade = pos for generating invoices
-    $is_a_token_paired = $wpdb->get_results("SELECT COUNT(*) FROM {$wpdb->prefix}bitpay_keys WHERE `in_use` = 'true' AND `facade` = 'pos' LIMIT 1");
+    $is_a_token_paired = $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}bitpay_keys WHERE `in_use` = 'true' AND `facade` = 'pos' LIMIT 1");
+
     if ($is_a_token_paired < 1) {
+        debuglog("No tokens are paired so no transactions can be done!");
         var_dump("Error Processing Transaction. Please try again later. If the problem persists, please contact us at ".get_option('admin_email'));
+    }
+
+    $row = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}bitpay_keys WHERE `in_use` = 'true' AND `facade` = 'pos' LIMIT 1");
+    $token = unserialize($mcrypt_ext->decrypt($row[0]->token, $fingerprint, '00000000'));
+    $public_key = unserialize($mcrypt_ext->decrypt($row[0]->public_key, $fingerprint, '00000000'));
+    $private_key = unserialize($mcrypt_ext->decrypt($row[0]->private_key, $fingerprint, '00000000'));
+    $network = ($row[0]->network === 'Livenet') ? new \Bitpay\Network\Livenet() : new \Bitpay\Network\Testnet();
+    $row_id = $row[0]->id;
+
+    $adapter = new \Bitpay\Client\Adapter\CurlAdapter();
+
+    //This grabs the purchase log id from the database
+    //that refers to the $sessionid
+    $purchase_log = $wpdb->get_row(
+        "SELECT * FROM `".WPSC_TABLE_PURCHASE_LOGS.
+        "` WHERE `sessionid`= ".$sessionid." LIMIT 1",
+        ARRAY_A);
+
+    //This grabs the users info using the $purchase_log
+    // from the previous SQL quer
+    $usersql =
+        "SELECT `".WPSC_TABLE_SUBMITED_FORM_DATA."`.value,
+        `".WPSC_TABLE_CHECKOUT_FORMS."`.`name`,
+        `".WPSC_TABLE_CHECKOUT_FORMS."`.`unique_name` FROM
+        `".WPSC_TABLE_CHECKOUT_FORMS."` LEFT JOIN
+        `".WPSC_TABLE_SUBMITED_FORM_DATA."` ON
+        `".WPSC_TABLE_CHECKOUT_FORMS."`.id =
+        `".WPSC_TABLE_SUBMITED_FORM_DATA."`.`form_id` WHERE
+        `".WPSC_TABLE_SUBMITED_FORM_DATA."`.`log_id`='".$purchase_log['id']."'";
+
+    $userinfo = $wpdb->get_results($usersql, ARRAY_A);
+
+    // convert from awkward format
+    $ui = array();
+    foreach ((array) $userinfo as $value) {
+        if (strlen($value['value'])) {
+            $ui[$value['unique_name']] = $value['value'];
+        }
+    }
+
+    $userinfo = $ui;
+
+    /**
+     * Create Buyer object that will be used later.
+     */
+    $buyer = new \Bitpay\Buyer();
+    // name
+    if (isset($userinfo['billingfirstname'])) {
+        $buyer->setFirstName($userinfo['billingfirstname']);
+
+        if (isset($userinfo['billinglastname'])) {
+            $buyer->setLastName($userinfo['billinglastname']);
+        }
+    }
+
+    // address -- remove newlines
+    if (isset($userinfo['billingaddress'])) {
+        $newline = strpos($userinfo['billingaddress'], "\n");
+        $address2 = '';
+        if ($newline !== FALSE) {
+            $address_line1 = substr($userinfo['billingaddress'], 0, $newline);
+            $address_line2 = substr($userinfo['billingaddress'], $newline + 1);
+            $address_line2 = preg_replace('/\r\n/', ' ', $address_line2, -1, $count);
+        } else {
+            $address_line1 = $userinfo['billingaddress'];
+        }
+        $buyer->setAddress(
+            array(
+                $address_line1,
+                $address_line2,
+            )
+        );
+    }
+    // state
+    if (isset($userinfo['billingstate'])) {
+        // check if State is a number code used when Selecting country as US
+        if (ctype_digit($userinfo['billingstate'])) {
+            $buyer->setState(wpsc_get_state_by_id($userinfo['billingstate'], 'code'));
+        } else {
+            $buyer->setState($userinfo['billingstate']);
+        }
+    }
+    // country
+    if (isset($userinfo['billingcountry'])) {
+        $buyer->setCountry($userinfo['billingcountry']);
+    }
+    // city
+    if (isset($userinfo['billingcity'])) {
+        $buyer->setCity($userinfo['billingcity']);
+    }
+    // postal code
+    if (isset($userinfo['billingpostcode'])) {
+        $buyer->setZip($userinfo['billingpostcode']);
+    }
+    // email
+    if (isset($userinfo['billingemail'])) {
+        $buyer->setEmail($userinfo['billingemail']);
+    }
+    // phone
+    if (isset($userinfo['billingphone'])) {
+        $buyer->setPhone($userinfo['billingphone']);
+    }
+
+    // more user info
+    foreach (array('billingphone' => 'buyerPhone', 'billingemail' => 'buyerEmail', 'billingcity' => 'buyerCity',  'billingcountry' => 'buyerCountry', 'billingpostcode' => 'buyerZip') as $f => $t) {
+        if ($userinfo[$f]) {
+            $options[$t] = $userinfo[$f];
+        }
+    }
+
+    /**
+     * Create an Item object that will be used later
+     */
+    $item = new \Bitpay\Item();
+
+    // itemDesc, Sku, and Quantity
+    if (count($wpsc_cart->cart_items) == 1) {
+        $item_incart = $wpsc_cart->cart_items[0];
+        $item_id = $item_incart->product_id;
+        $item_sku = wpsc_product_sku($item_id);
+        $item_description = $item_incart->product_name;
+        if ($item_incart->quantity > 1) {
+            $item_description = $item_incart->quantity.'x '.$item_description;
+        }
     } else {
-        $row = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}bitpay_keys WHERE `in_use` = 'true' AND `facade` = 'pos' LIMIT 1");
-        $token = unserialize($mcrypt_ext->decrypt($row[0]->token, $fingerprint, '00000000'));
-        $public_key = unserialize($mcrypt_ext->decrypt($row[0]->public_key, $fingerprint, '00000000'));
-        $private_key = unserialize($mcrypt_ext->decrypt($row[0]->private_key, $fingerprint, '00000000'));
-        $network = ($row[0]->network === 'Livenet') ? new \Bitpay\Network\Livenet() : new \Bitpay\Network\Testnet();
-
-        $adapter = new \Bitpay\Client\Adapter\CurlAdapter();
-
-        //This grabs the purchase log id from the database
-        //that refers to the $sessionid
-        $purchase_log = $wpdb->get_row(
-            "SELECT * FROM `".WPSC_TABLE_PURCHASE_LOGS.
-            "` WHERE `sessionid`= ".$sessionid." LIMIT 1",
-            ARRAY_A);
-
-        //This grabs the users info using the $purchase_log
-        // from the previous SQL quer
-        $usersql =
-            "SELECT `".WPSC_TABLE_SUBMITED_FORM_DATA."`.value,
-            `".WPSC_TABLE_CHECKOUT_FORMS."`.`name`,
-            `".WPSC_TABLE_CHECKOUT_FORMS."`.`unique_name` FROM
-            `".WPSC_TABLE_CHECKOUT_FORMS."` LEFT JOIN
-            `".WPSC_TABLE_SUBMITED_FORM_DATA."` ON
-            `".WPSC_TABLE_CHECKOUT_FORMS."`.id =
-            `".WPSC_TABLE_SUBMITED_FORM_DATA."`.`form_id` WHERE
-            `".WPSC_TABLE_SUBMITED_FORM_DATA."`.`log_id`='".$purchase_log['id']."'";
-
-        $userinfo = $wpdb->get_results($usersql, ARRAY_A);
-
-        // convert from awkward format
-        $ui = array();
-        foreach ((array) $userinfo as $value) {
-            if (strlen($value['value'])) {
-                $ui[$value['unique_name']] = $value['value'];
-            }
-        }
-
-        $userinfo = $ui;
-
-        /**
-         * Create Buyer object that will be used later.
-         */
-        $buyer = new \Bitpay\Buyer();
-        // name
-        if (isset($userinfo['billingfirstname'])) {
-            $buyer->setFirstName($userinfo['billingfirstname']);
-
-            if (isset($userinfo['billinglastname'])) {
-                $buyer->setLastName($userinfo['billinglastname']);
-            }
-        }
-
-        // address -- remove newlines
-        if (isset($userinfo['billingaddress'])) {
-            $newline = strpos($userinfo['billingaddress'], "\n");
-            $address2 = '';
-            if ($newline !== FALSE) {
-                $address_line1 = substr($userinfo['billingaddress'], 0, $newline);
-                $address_line2 = substr($userinfo['billingaddress'], $newline + 1);
-                $address_line2 = preg_replace('/\r\n/', ' ', $address_line2, -1, $count);
-            } else {
-                $address_line1 = $userinfo['billingaddress'];
-            }
-            $buyer->setAddress(
-                array(
-                    $address_line1,
-                    $address_line2,
-                )
-            );
-        }
-        // state
-        if (isset($userinfo['billingstate'])) {
-            // check if State is a number code used when Selecting country as US
-            if (ctype_digit($userinfo['billingstate'])) {
-                $buyer->setState(wpsc_get_state_by_id($userinfo['billingstate'], 'code'));
-            } else {
-                $buyer->setState($userinfo['billingstate']);
-            }
-        }
-        // country
-        if (isset($userinfo['billingcountry'])) {
-            $buyer->setCountry($userinfo['billingcountry']);
-        }
-        // city
-        if (isset($userinfo['billingcity'])) {
-            $buyer->setCity($userinfo['billingcity']);
-        }
-        // postal code
-        if (isset($userinfo['billingpostcode'])) {
-            $buyer->setZip($userinfo['billingpostcode']);
-        }
-        // email
-        if (isset($userinfo['billingemail'])) {
-            $buyer->setEmail($userinfo['billingemail']);
-        }
-        // phone
-        if (isset($userinfo['billingphone'])) {
-            $buyer->setPhone($userinfo['billingphone']);
-        }
-
-        // more user info
-        foreach (array('billingphone' => 'buyerPhone', 'billingemail' => 'buyerEmail', 'billingcity' => 'buyerCity',  'billingcountry' => 'buyerCountry', 'billingpostcode' => 'buyerZip') as $f => $t) {
-            if ($userinfo[$f]) {
-                $options[$t] = $userinfo[$f];
-            }
-        }
-
-        /**
-         * Create an Item object that will be used later
-         */
-        $item = new \Bitpay\Item();
-
-        // itemDesc, Sku, and Quantity
-        if (count($wpsc_cart->cart_items) == 1) {
-            $item_incart = $wpsc_cart->cart_items[0];
+        foreach ($wpsc_cart->cart_items as $item_incart) {
+            $quantity += $item_incart->quantity;
             $item_id = $item_incart->product_id;
-            $item_sku = wpsc_product_sku($item_id);
-            $item_description = $item_incart->product_name;
-            if ($item_incart->quantity > 1) {
-                $item_description = $item_incart->quantity.'x '.$item_description;
-            }
-        } else {
-            foreach ($wpsc_cart->cart_items as $item_incart) {
-                $quantity += $item_incart->quantity;
-                $item_id = $item_incart->product_id;
-                $item_sku_individual = wpsc_product_sku($item_id);
-                $item_sku .= $item_incart->quantity.'x '.$item_sku_individual.' ';
-            }
-            $item_description = $quantity.' items';
+            $item_sku_individual = wpsc_product_sku($item_id);
+            $item_sku .= $item_incart->quantity.'x '.$item_sku_individual.' ';
         }
+        $item_description = $quantity.' items';
+    }
 
-        // price
-        $price = number_format($wpsc_cart->total_price, 2);
-        $item
-            ->setDescription($item_description)
-            ->setCode($item_sku)
-            ->setPrice($price);
+    // price
+    $price = number_format($wpsc_cart->total_price, 2);
+    $item
+        ->setDescription($item_description)
+        ->setCode($item_sku)
+        ->setPrice($price);
 
-        /**
-         * Create the invoice
-         */
-        $invoice = new \Bitpay\Invoice();
-        // Add the item to the invoice
-        $invoice->setItem($item);
-        // Add the buyers info to invoice
-        $invoice->setBuyer($buyer);
-        // Configure the rest of the invoice
-        $purchase_log = $wpdb->get_row("SELECT * FROM `".WPSC_TABLE_PURCHASE_LOGS."` WHERE `sessionid`= ".$sessionid." LIMIT 1", ARRAY_A);
-        $invoice
-            ->setOrderId($purchase_log['id'])
-            // You will receive IPN's at this URL, Must be HTTPS
-            ->setNotificationUrl(get_option('siteurl').'/?bitpay_callback=true');
+    /**
+     * Create the invoice
+     */
+    $invoice = new \Bitpay\Invoice();
+    // Add the item to the invoice
+    $invoice->setItem($item);
+    // Add the buyers info to invoice
+    $invoice->setBuyer($buyer);
+    // Configure the rest of the invoice
+    $purchase_log = $wpdb->get_row("SELECT * FROM `".WPSC_TABLE_PURCHASE_LOGS."` WHERE `sessionid`= ".$sessionid." LIMIT 1", ARRAY_A);
+    $invoice
+        ->setOrderId($purchase_log['id'])
+        // You will receive IPN's at this URL, Must be HTTPS
+        ->setNotificationUrl(get_option('siteurl').'/?bitpay_callback=true');
 
-        /**
-         * BitPay offers services for many different currencies. You will need to
-         * configure the currency in which you are selling products with.
-         */
-        //currency
-        $currency = new \Bitpay\Currency();
-        $currencyId = get_option('currency_type');
-        $currency_code = $wpdb->get_var($wpdb->prepare("SELECT `code` FROM `".WPSC_TABLE_CURRENCY_LIST."` WHERE `id` = %d LIMIT 1", $currencyId));
-        $currency->setCode($currency_code);
+    /**
+     * BitPay offers services for many different currencies. You will need to
+     * configure the currency in which you are selling products with.
+     */
+    //currency
+    $currency = new \Bitpay\Currency();
+    $currencyId = get_option('currency_type');
+    $currency_code = $wpdb->get_var($wpdb->prepare("SELECT `code` FROM `".WPSC_TABLE_CURRENCY_LIST."` WHERE `id` = %d LIMIT 1", $currencyId));
+    $currency->setCode($currency_code);
 
-        // Set the invoice currency
-        $invoice->setCurrency($currency);
+    // Set the invoice currency
+    $invoice->setCurrency($currency);
 
-        // Transaction Speed
-        $invoice->setTransactionSpeed(get_option('bitpay_transaction_speed'));
+    // Transaction Speed
+    $invoice->setTransactionSpeed(get_option('bitpay_transaction_speed'));
 
-        // Redirect URL
-        if (get_option('permalink_structure') != '') {
-            $separator = "?";
-        } else {
-            $separator = "&";
-        }
+    // Redirect URL
+    if (get_option('permalink_structure') != '') {
+        $separator = "?";
+    } else {
+        $separator = "&";
+    }
 
-        if (is_null(get_option('bitpay_redirect'))) {
-            update_option('bitpay_redirect', get_site_url());
-        }
-        $redirect_url = get_option('bitpay_redirect');
+    if (is_null(get_option('bitpay_redirect'))) {
+        update_option('bitpay_redirect', get_site_url());
+    }
+    $redirect_url = get_option('bitpay_redirect');
 
-        $invoice->setRedirectUrl($redirect_url);
+    $invoice->setRedirectUrl($redirect_url);
 
-        // PosData
-        $invoice->setPosData($sessionid);
+    // PosData
+    $invoice->setPosData($sessionid);
 
-        // Full Notifications
-        $invoice->setFullNotifications(true);
+    // Full Notifications
+    $invoice->setFullNotifications(true);
 
-        /**
-         * Create the client that will be used to send requests to BitPay's API
-         */
-        $client = new \Bitpay\Client\Client();
-        $client->setAdapter($adapter);
-        $client->setNetwork($network);
-        $client->setPrivateKey($private_key);
-        $client->setPublicKey($public_key);
+    /**
+     * Create the client that will be used to send requests to BitPay's API
+     */
+    $client = new \Bitpay\Client\Client();
+    $client->setAdapter($adapter);
+    $client->setNetwork($network);
+    $client->setPrivateKey($private_key);http://localhost/?page_id=5http://localhost/?page_id=5http://localhost/?page_id=5http://localhost/?page_id=5
+    $client->setPublicKey($public_key);
 
-        /**
-         * You will need to set the token that was returned when you paired your
-         * keys.
-         */
-        $client->setToken($token);
+    /**
+     * You will need to set the token that was returned when you paired your
+     * keys.
+     */
+    $client->setToken($token);
 
-        // Send invoice
-        try {
-            $client->createInvoice($invoice);
-        } catch (Exception $e) {
-            debuglog($e->getMessage());
-        }
+    // Send invoice
+    try {
+        $client->createInvoice($invoice);
+    } catch (Exception $e) {
+        debuglog($e->getMessage());
+        var_dump("Error Processing Transaction. Please try again later. If the problem persists, please contact us at ".get_option('admin_email'));
+        $transaction = false;
+        $wpdb->query("UPDATE {$wpdb->prefix}bitpay_keys SET `paired` = 'false' WHERE `id` = {$row_id}");
+    }
 
+    if ($transaction) {
         $sql = "UPDATE `".WPSC_TABLE_PURCHASE_LOGS."` SET `notes`= 'The payment has not been received yet.' WHERE `sessionid`=".$sessionid;
         $wpdb->query($sql);
         $wpsc_cart->empty_cart();
         unset($_SESSION['WpscGatewayErrorMessage']);
         header('Location: '.$invoice->getUrl());
-
-        exit();
     }
+
+
+    exit();
+    
 }
 
 function bitpay_callback()
