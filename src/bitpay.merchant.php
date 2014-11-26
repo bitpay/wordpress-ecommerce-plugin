@@ -275,7 +275,7 @@ function form_bitpay()
         $enable_all = $tablerow->enable_all;
         //Get visibility status to other users
         $creator_id = $tablerow->user_id;
-        //Token's row id
+        //Token's paired status
         $is_paired = $tablerow->paired;
 
         //Enable_all status button
