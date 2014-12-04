@@ -26,8 +26,16 @@
 
 // Load BitPay Client
 // Load up the BitPay library
-require_once __DIR__.'/bitpay/lib/Bitpay/Autoloader.php';
-\Bitpay\Autoloader::register();
+$autoloader_param = __DIR__.'/bitpay/lib/Bitpay/Autoloader.php';
+
+if (true === file_exists($autoloader_param) &&
+    true === is_readable($autoloader_param))
+{
+    require_once $autoloader_param;
+    \Bitpay\Autoloader::register();
+} else {
+    throw new \Exception('The BitPay payment plugin was not installed correctly or the files are corrupt. Please reinstall the plugin. If this message persists after a reinstall, contact support@bitpay.com with this message.');
+}
 
 // Load upgrade file
 require_once ABSPATH.'wp-admin/includes/upgrade.php';
@@ -53,7 +61,7 @@ $nzshpcrt_gateways[$num] = array(
         'wp_admin_cannot_cancel'                  => true,
         'display_name'                            => __('Bitcoin', 'wpsc'),
         'user_defined_name[wpsc_merchant_bitpay]' => 'Bitcoin',
-        'requirements'                            => array('php_version' => 5.3),
+        'requirements'                            => array('php_version' => 5.4),
         'internalname'                            => 'wpsc_merchant_bitpay',
         'form'                                    => 'form_bitpay',
         'submit_function'                         => 'submit_bitpay',
@@ -62,8 +70,8 @@ $nzshpcrt_gateways[$num] = array(
 
 function debuglog($contents)
 {
-    if (isset($contents)) {
-        if (is_resource($contents)) {
+    if (true === isset($contents)) {
+        if (true === is_resource($contents)) {
             error_log(serialize($contents));
         } else {
             error_log(var_export($contents, true));
@@ -128,8 +136,8 @@ function create_client($network, $public, $private)
     //Set the network being paired with.
     $networkClass = 'Bitpay\\Network\\'.$network;
 
-    if (!class_exists($networkClass)) {
-        throw new Exception('Cannot find network.');
+    if (false === class_exists($networkClass)) {
+        throw new \Exception('Cannot find network.');
     }
 
     $client->setNetwork(new $networkClass());
@@ -156,7 +164,7 @@ function pairing($pairing_code, $client, $sin)
         );
 
         return $token;
-    } catch (Exception $e) {
+    } catch (\Exception $e) {
         $error = $e->getMessage();
         error_log($error);
         update_option('bitpay_error', $error);
@@ -479,9 +487,11 @@ function submit_bitpay()
 function gateway_bitpay($seperator, $sessionid)
 {
     global $wpdb, $wpsc_cart;
-    $mcrypt_ext = new \Bitpay\Crypto\McryptExtension();
+
+    $mcrypt_ext  = new \Bitpay\Crypto\McryptExtension();
     $fingerprint = \Bitpay\Util\Fingerprint::generate();
     $fingerprint = substr($fingerprint, 0, 24);
+
     //Use token that is in_use and with facade = pos for generating invoices
     $is_a_token_paired = $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}bitpay_keys WHERE `in_use` = 'true' AND `facade` = 'pos' LIMIT 1");
 
@@ -522,6 +532,7 @@ function gateway_bitpay($seperator, $sessionid)
 
     // convert from awkward format
     $ui = array();
+
     foreach ((array) $userinfo as $value) {
         if (strlen($value['value'])) {
             $ui[$value['unique_name']] = $value['value'];
@@ -534,6 +545,7 @@ function gateway_bitpay($seperator, $sessionid)
      * Create Buyer object that will be used later.
      */
     $buyer = new \Bitpay\Buyer();
+
     // name
     if (isset($userinfo['billingfirstname'])) {
         $buyer->setFirstName($userinfo['billingfirstname']);
@@ -698,7 +710,7 @@ function gateway_bitpay($seperator, $sessionid)
     // Send invoice
     try {
         $client->createInvoice($invoice);
-    } catch (Exception $e) {
+    } catch (\Exception $e) {
         debuglog($e->getMessage());
         var_dump("Error Processing Transaction. Please try again later. If the problem persists, please contact us at ".get_option('admin_email'));
         $transaction = false;
@@ -725,7 +737,7 @@ function bitpay_callback()
 
         $post = file_get_contents("php://input");
 
-        if (!$post) {
+        if (true === empty($post)) {
             return array('error' => 'No post data');
         }
 
@@ -743,23 +755,27 @@ function bitpay_callback()
             return 'Cannot find invoice ID';
         }
 
-    //Don't trust parameters from the scary internet.
-    //Use invoice ID from the $json in  getInvoice($invoice_id) and get status from that.
+        //Don't trust parameters from the scary internet.
+        //Use invoice ID from the $json in  getInvoice($invoice_id) and get status from that.
         $client = new \Bitpay\Client\Client();
         $adapter = new \Bitpay\Client\Adapter\CurlAdapter();
+
         if (strpos($json['url'], 'test') === false) {
             $network = new \Bitpay\Network\Livenet();
         } else {
             $network = new \Bitpay\Network\Testnet();
         }
+
         $client->setAdapter($adapter);
         $client->setNetwork($network);
+
         try {
             $response = $client->getInvoice($json['id']);
         } catch (MyException $e) {
             debuglog($response->getBody());
             debuglog($e->getMessage());
         }
+
         $sessionid = $response->getPosData();
 
         //get buyer email
