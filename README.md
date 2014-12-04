@@ -49,7 +49,7 @@ WordPress e-Commerce plugin
 
 * You should now see a paired token in your settings. 
 
-![BTC Invoic***e](https://raw.githubusercontent.com/aleitner/aleitner.github.io/master/wordpress-ecommerce-plugin-v2/images/Screen%20Shot%202014-11-17%20at%201.06.23%20PM.png)
+![BTC Invoice](https://raw.githubusercontent.com/aleitner/aleitner.github.io/master/wordpress-ecommerce-plugin-v2/images/Screen%20Shot%202014-11-17%20at%201.06.23%20PM.png)
 
 * Change the Transaction Speed if desired (see information about this in the API documentation at https://bitpay.com/downloads/bitpayApi.pdf).
 
