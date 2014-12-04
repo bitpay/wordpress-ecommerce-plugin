@@ -81,7 +81,7 @@ WordPress e-Commerce plugin
 * [Homepage](http://getshopped.org/)
 * [Documentation](http://docs.getshopped.org/)
 * [Support Forums](https://wordpress.org/support/plugin/wp-e-commerce)
-)
+
 # Troubleshooting
 
 The latest version of this plugin can always be downloaded from the official BitPay repository located here: https://github.com/bitpay/wordpress-ecommerce-plugin
