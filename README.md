@@ -86,16 +86,19 @@ WordPress e-Commerce plugin
 
 The latest version of this plugin can always be downloaded from the official BitPay repository located here: https://github.com/bitpay/wordpress-ecommerce-plugin
 
-Ensure a valid SSL certificate is installed on your server. Also ensure your root CA cert is updated. If your CA cert is not current, you will see curl SSL verification errors.
-Verify that your web server is not blocking POSTs from servers it may not recognize. Double check this on your firewall as well, if one is being used.
-Check the system error log file (usually the web server error log) for any errors during BitPay payment attempts. If you contact BitPay support, they will ask to see the log file to help diagnose the problem.
-Check the version of this plugin against the official plugin repository to ensure you are using the latest version. Your issue might have been addressed in a newer version!
-If all else fails, send an email describing your issue in detail to support@bitpay.com
+* This plugin requires PHP 5.4 or higher to function correctly. Contact your webhosting provider or server administrator if you are unsure which version is installed on your web server.
+* Ensure a valid SSL certificate is installed on your server. Also ensure your root CA cert is updated. If your CA cert is not current, you will see curl SSL verification errors.
+* Verify that your web server is not blocking POSTs from servers it may not recognize. Double check this on your firewall as well, if one is being used.
+* Check the system error log file (usually the web server error log) for any errors during BitPay payment attempts. If you contact BitPay support, they will ask to see the log file to help diagnose the problem.
+* Check the version of this plugin against the official plugin repository to ensure you are using the latest version. Your issue might have been addressed in a newer version!
+* If all else fails, send an email describing your issue in detail to support@bitpay.com
+
 NOTE: When contacting support it will help us if you provide:
 
-Wordpress Version
-WP e-Commerce Version
-Other plugins you have installed
+* Wordpress Version
+* WP e-Commerce Version
+* PHP Version
+* Other plugins you have installed
 
 # Contribute
 
