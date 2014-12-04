@@ -37,6 +37,11 @@ if (true === file_exists($autoloader_param) &&
     throw new \Exception('The BitPay payment plugin was not installed correctly or the files are corrupt. Please reinstall the plugin. If this message persists after a reinstall, contact support@bitpay.com with this message.');
 }
 
+// Check version requirement dependencies
+if (false !== bitpay_requirements_check()) {
+    throw new \Exception('Your server does not meet the minimum requirements to use the BitPay payment plugin. The requirements check returned this error message: ' . bitpay_requirements_check());
+}
+
 // Load upgrade file
 require_once ABSPATH.'wp-admin/includes/upgrade.php';
 
@@ -892,6 +897,33 @@ function bitpay_callback()
                 }
                 break;
         }
+    }
+}
+
+function bitpay_requirements_check()
+{
+    global $wp_version;
+    $errors = array();
+
+    // PHP 5.4+ required
+    if (true === version_compare(PHP_VERSION, '5.4.0', '<')) {
+        $errors[] = 'Your PHP version is too old. The BitPay payment plugin requires PHP 5.4 or higher to function. Please contact your web server administrator for assistance.';
+    }
+
+    // Wordpress 3.9+ required
+    if (true === version_compare($wp_version, '3.9', '<')) {
+        $errors[] = 'Your WordPress version is too old. The BitPay payment plugin requires Wordpress 3.9 or higher to function. Please contact your web server administrator for assistance.';
+    }
+
+    // GMP or BCMath required
+    if (false === extension_loaded('gmp') && false === extension_loaded('bcmath')) {
+        $errors[] = 'The BitPay payment plugin requires the GMP or BC Math extension for PHP in order to function. Please contact your web server administrator for assistance.';
+    }
+
+    if (false === empty($errors)) {
+        return implode("<br>\n", $errors);
+    } else {
+        return false;
     }
 }
 
