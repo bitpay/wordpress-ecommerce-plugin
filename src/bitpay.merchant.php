@@ -465,14 +465,13 @@ function form_bitpay()
                         '<p class="description"><strong>Important!</strong> Put the URL that you want the buyer to be redirected to after payment. This is usually a "Thanks for your order!" page.</p>',
                        );
 
-        $output .= '
-        <tr>
-            <td colspan="2">
-                <p class="description">
-                    <img src="' . WPSC_URL . '/wpsc-merchants/bitpay/assets/img/bitcoin.png" /><br /><strong>Have more questions? Need assistance? Please visit our website <a href="https://bitpay.com" target="_blank">https://bitpay.com</a> or send an email to <a href="mailto:support@bitpay.com" target="_blank">support@bitpay.com</a> for prompt attention. Thank you for choosing BItPay!</strong>
-                </p>
-            </td>
-        </tr>'. "\n";
+        $output .= '<tr>' .
+            '<td colspan="2">' .
+                '<p class="description">' .
+                    '<img src="' . WPSC_URL . '/wpsc-merchants/bitpay/assets/img/bitcoin.png" /><br /><strong>Have more questions? Need assistance? Please visit our website <a href="https://bitpay.com" target="_blank">https://bitpay.com</a> or send an email to <a href="mailto:support@bitpay.com" target="_blank">support@bitpay.com</a> for prompt attention. Thank you for choosing BItPay!</strong>' .
+                '</p>' .
+            '</td>' .
+        '</tr>'. "\n";
 
         foreach ($rows as $r) {
             $output .= '<tr> <td>' . $r[0] . '</td> <td>' . $r[1];
@@ -592,7 +591,7 @@ function submit_bitpay()
 
 function gateway_bitpay($seperator, $sessionid)
 {
-    global $wpdb
+    global $wpdb;
     global $wpsc_cart;
 
     try {
@@ -931,7 +930,7 @@ function bitpay_callback()
             $subtotal = 0.0;
 
             foreach ($cart_contents as $product) {
-            	// shipping for each item
+                // shipping for each item
                 $pnp += $product['pnp'];
 
                 $message_product .= 'x' . $product['quantity'] . ' ' . $product['name'] . ' - ' . $currency_symbol . ($product['price'] * $product['quantity']) . "\r\n";
