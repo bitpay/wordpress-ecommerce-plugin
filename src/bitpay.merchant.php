@@ -196,13 +196,15 @@ function create_client($network, $public, $private)
 function pairing($pairing_code, $client, $sin)
 {
     //Create Token
+    $label = preg_replace('/[^a-zA-Z0-9 \-\_\.]/', '', get_bloginfo());
+    $label = substr('WP Ecommerce - '.$label, 0, 59);
     try {
         // @var \Bitpay\TokenInterface
         $token = $client->createToken(
             array(
                 'id'          => (string) $sin,
                 'pairingCode' => $pairing_code,
-                'label'       => 'WP Ecommerce - '.get_option('siteurl'),
+                'label'       => $label,
             )
         );
 
@@ -356,7 +358,8 @@ function form_bitpay()
             $is_paired = $tablerow->paired;
 
             // Enable_all status button
-            $enable_for_all = $just_me = '';
+            $enable_for_all = '';
+            $just_me = '';
 
             switch ($enable_all) {
                 case 'true':
@@ -843,10 +846,9 @@ function gateway_bitpay($seperator, $sessionid)
             debuglog($e->getMessage());
             var_dump("Error Processing Transaction. Please try again later. If the problem persists, please contact us at " .get_option('admin_email'));
             $transaction = false;
-            $wpdb->query("UPDATE {$wpdb->prefix}bitpay_keys SET `paired` = 'false' WHERE `id` = {$row_id}");
         }
 
-        if ($transaction) {
+        if (true === $transaction) {
             $sql = "UPDATE `" .WPSC_TABLE_PURCHASE_LOGS. "` SET `notes`= 'The payment has not been received yet.' WHERE `sessionid`=" . $sessionid;
             $wpdb->query($sql);
             $wpsc_cart->empty_cart();
