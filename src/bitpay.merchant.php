@@ -761,7 +761,7 @@ function gateway_bitpay($seperator, $sessionid)
         }
 
         // price
-        $price = number_format($wpsc_cart->total_price, 2);
+        $price = number_format($wpsc_cart->total_price, 2, '.', '');
 
         $item->setDescription($item_description)
              ->setCode($item_sku)
