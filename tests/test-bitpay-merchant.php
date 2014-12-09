@@ -141,58 +141,30 @@ class bitpaymerchantTest extends WP_UnitTestCase
         stream_wrapper_register("php", "MockPhpStream");
 
         file_put_contents('php://input', '[' .
-            '{"code":1000,' .
-            '"amount":0.0195,' .
-            '"timestamp":"2013­12­02T16:16:29.612Z",' .
-            '"description":"2",' .
-            '"txType":"sale",' .
-            '"exRates":{"USD":1025},' .
-            '"buyerFields":{' .
-            '  "buyerName":"BitPay Customer",' .
-            '  "buyerAddress1":"3423 Piedmont Rd NE",' .
-            '  "buyerAddress2":"Suite 516",' .
-            '  "buyerCity":"Atlanta",' .
-            '  "buyerState":"GA",' .
-            '  "buyerZip":"30305",' .
-            '  "buyerEmail":"customer@bitpay.com",' .
-            '  "buyerPhone":"1­855­4­BITPAY"},' .
-            'invoiceId":"C8a5bQeRTPDineVSDCw6KJ",' .
-            '"sourceType":"invoice",' .
-            '"orderId":"2"},' .
-            '{"code":1001,' .
-            '"amount":-0.0002,' .
-            '"timestamp":"2013­12­02T16:16:29.612Z",' .
-            '"txType":"fee",' .
-            '"exRates":{"USD":1025},' .
-            '"buyerFields":{' .
-            '  "buyerName":"BitPay Customer",' .
-            '  "buyerAddress1":"3423 Piedmont Rd NE",' .
-            '  "buyerAddress2":"Suite 516","buyerCity":"Atlanta",' .
-            '  "buyerState":"GA",' .
-            '  "buyerZip":"30305",' .
-            '  "buyerEmail":"customer@bitpay.com",' .
-            '  "buyerPhone":"1­855­4­BITPAY"},' .
-            '"invoiceId":"C8a5bQeRTPDineVSDCw6KJ",' .
-            '"sourceType":"invoice",' .
-            '"orderId":"2"},' .
-            '{"code":1000,' .
-            '"amount":0.1093,' .
-            '"timestamp":"2014­01­06T19:01:09.522Z",' .
-            '"description":"Bill 1",' .
-            '"txType":"sale",' .
-            '"exRates":{"USD":915.0704604254529},' .
-            '"buyerFields":{},' .
-            '"invoiceId":"JHfkEPc212HThzB25ngz31",' .
-            '"sourceType":"invoice",' .
-            '"orderId":""},' .
-            '{"code":1001,' .
-            '"amount":-0.0011,' .
-            '"timestamp":"2014­01­06T19:01:09.522Z",' .
-            '"txType":"fee",' .
-            '"exRates":{"USD":915.0704604254529},' .
-            '"buyerFields":{},' .
-            '"invoiceId":"JHfkEPc212HThzB25ngz31",' .
-            '"sourceType":"invoice"}' .
+            '{'.
+            '"id":"QXVd4WRtsPbax9jLe7uHBh",'.
+            '"url":"https://test.bitpay.com/invoice?id=QXVd4WRtsPbax9jLe7uHBh",'.
+            '"posData":"8261418159074",'.
+            '"status":"paid",'.
+            '"btcPrice":"0.0014",'.
+            '"price":0.5,'.
+            '"currency":"USD",'.
+            '"invoiceTime":1418158912927,'.
+            '"expirationTime":1418159812927,'.
+            '"currentTime":1418158957984,'.
+            '"btcPaid":"0.0014","rate":353.29,'.
+            '"exceptionStatus":false,'.
+            '"buyerFields":{'.
+            '"buyerCity":"Bob Dole",'.
+            '"buyerEmail":"alex@bitpay.com",'.
+            '"buyerPhone":null,'.
+            '"buyerAddress2":"",'.
+            '"buyerZip":"41015",'.
+            '"buyerState":"KS",'.
+            '"buyerCountry":"US",'.
+            '"buyerName":"Bobert Dole",'.
+            '"buyerAddress1":"123 Bob Dole Way"}'.
+            '}' .
             ']'
         );
 
