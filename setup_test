@@ -1,0 +1,86 @@
+#!/usr/bin/env bash
+
+if [ "$1" == '' ]
+then
+       DB_USER='root'
+       DB_PASS='bitpay'
+else
+       DB_USER=$1
+       DB_PASS=$2
+fi
+if [ "$3" == '' ]
+then
+       DB_NAME='wordpress_test'
+else
+       DB_NAME=$3
+fi
+echo $SHELL
+export DB_USER=$DB_USER
+export DB_PASS=$DB_PASS
+export DB_NAME=$DB_NAME
+echo "Removing conflicting files..."
+rm -rf wordpress
+rm -rf build
+rm bitpay_table.sql
+rm tests\\php_input.txt
+rm -rf /tmp/wordpress
+rm -rf /tmp/wordpress-tests-lib
+rm -rf /tmp/wordpress.tar.gz
+rm wp-cli.yml
+echo "Creating wp-cli.yml..."
+echo "path: wordpress
+debug: true
+core config:
+  site_url: http://localhost
+  dbname: $DB_NAME
+  dbuser: $DB_USER
+  dbpass: $DB_PASS
+  dbhost: 127.0.0.1
+  extra-php: |
+    define( 'WP_DEBUG', true );
+    \$table_prefix  = 'wptests_';
+core install:
+  url: http://localhost
+  title: BitPay Wordpress
+  admin_user: bitpay
+  admin_password: bitpay
+  admin_email: NULL@localhost.net" >> wp-cli.yml
+if [ -e composer.lock ]
+then
+       echo "Running Composer update..."
+       composer update
+else
+       echo "Running Composer Install..."
+       composer install
+fi
+echo "Checking if wp-cli is working..."
+bin/wp --info
+echo "Installing wordpress..."
+bin/wp core download --debug
+bin/wp core config --debug
+bin/wp core install --debug
+echo "Setting up wordpress plugins..."
+bin/wp plugin install wp-e-commerce --version=3.8.14.3 --activate
+echo "Setting up wordpress test files..."
+bin/wp scaffold plugin-tests wp-e-commerce
+echo "Setting up Bitpay key storage table..."
+echo 'CREATE TABLE IF NOT EXISTS `wptests_bitpay_keys` (
+       `id` int(11) not null auto_increment,
+       `private_key` varchar(1000) not null,
+       `public_key` varchar(1000) not null,
+       `sin` varchar(250) not null,
+       `token` varchar(2000) not null,
+       `network` varchar(250) not null,
+       `facade` varchar(250) not null,
+       `user_id` varchar(250) not null,
+       `enable_all` varchar(250) not null,
+       `in_use` varchar(250) not null,
+       `paired` varchar(250) not null,
+       `created_at` datetime not null,
+       PRIMARY KEY (`id`)
+       ) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;' >> bitpay_table.sql
+mysql -u $DB_USER -p$DB_PASS $DB_NAME < bitpay_table.sql
+bash wordpress/wp-content/plugins/wp-e-commerce/bin/install-wp-tests.sh $DB_NAME $DB_USER $DB_PASS localhost latest
+mkdir /tmp/wordpress/wp-content/uploads
+./setup
+cp -avr wpsc-merchants/* wordpress/wp-content/plugins/wp-e-commerce/wpsc-merchants > /dev/null
