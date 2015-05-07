@@ -131,29 +131,9 @@ function create_table()
 
 function generate_keys()
 {
-    /**
-     * GENERATING THE KEYS
-     */
-    $private = new \Bitpay\PrivateKey('/tmp/private.key');
-
-    if (true === empty($private)) {
-        debuglog('[Error] In Bitpay plugin, bitpay.merchant.php::generate_keys(): The BitPay plugin could not create a new PrivateKey object.');
-        throw new \Exception('An error occurred!  The BitPay plugin could not create a new PrivateKey object.');
-    }
-
-    $public = new \Bitpay\PublicKey('/tmp/public.key');
-
-    if (true === empty($public)) {
-        debuglog('Error] In Bitpay plugin, bitpay.merchant.php::generate_keys(): The BitPay plugin could not create a new PublicKey object.');
-        throw new \Exception('An error occurred!  The BitPay plugin could not create a new PublicKey object.');
-    }
-
-    $sin = new \Bitpay\SinKey('/tmp/sin.key');
-
-    if (true === empty($sin)) {
-        debuglog('[Error] In Bitpay plugin, bitpay.merchant.php::generate_keys(): The BitPay plugin could not create a new SinKey object.');
-        throw new \Exception('An error occurred!  The BitPay plugin could not create a new SinKey object.');
-    }
+    $private = new \Bitpay\PrivateKey();
+    $public  = new \Bitpay\PublicKey();
+    $sin     = new \Bitpay\SinKey();
 
     try {
         // Generate Private Key values
@@ -180,18 +160,8 @@ function create_client($network, $public, $private)
     // @var \Bitpay\Client\Client
     $client = new \Bitpay\Client\Client();
 
-    if (true === empty($client)) {
-        debuglog('[Error] In Bitpay plugin, create_client(): The BitPay plugin could not create a new Client object.');
-        throw new \Exception('An error occurred!  The BitPay plugin could not create a new Client object.');
-    }
-
     //Set the network being paired with.
-    $networkClass = 'Bitpay\\Network\\'. $network;
-
-    if (false === class_exists($networkClass)) {
-        debuglog('[Error] In Bitpay plugin, create_client() The BitPay plugin could not find the "' . $networkClass . '" network.');
-        throw new \Exception('An error occurred!  The BitPay plugin could not find the "' . $networkClass . '" network.');
-    }
+    $networkClass = 'Bitpay\\Network\\' . $network;
 
     try {
         $client->setNetwork(new $networkClass());
@@ -262,11 +232,6 @@ function save_keys($token, $network, $private, $public, $sin)
         //Protect your data!
         $mcrypt_ext  = new \Bitpay\Crypto\McryptExtension();
 
-        if (true === empty($mcrypt_ext)) {
-            debuglog('[Error] In Bitpay plugin, bitpay.merchant.php::save_keys(): The BitPay plugin could not create a new McryptExtension object.');
-            throw new \Exception('An error occurred!  The BitPay plugin could not create a new McryptExtension object.');
-        }
-
         $fingerprint = sha1(sha1(__DIR__));
         $fingerprint = substr($fingerprint, 0, 24);
 
@@ -329,13 +294,7 @@ function form_bitpay()
         create_table();
 
         // Protect your data!
-        $mcrypt_ext  = new \Bitpay\Crypto\McryptExtension();
-
-        if (true === empty($mcrypt_ext)) {
-            debuglog('[Error] In Bitpay plugin, bitpay.merchant.php::form_bitpay(): The BitPay plugin could not create a new McryptExtension object.');
-            throw new \Exception('An error occurred!  The BitPay plugin could not create a new McryptExtension object.');
-        }
-
+        $mcrypt_ext   = new \Bitpay\Crypto\McryptExtension();
         $fingerprint  = substr(sha1(sha1(__DIR__)), 0, 24);
         $bitpayjsfile = plugins_url('/bitpay/assets/js/bitpay.js', __FILE__);
 
@@ -643,12 +602,6 @@ function gateway_bitpay($seperator, $sessionid)
     try {
         // Protect your data!
         $mcrypt_ext  = new \Bitpay\Crypto\McryptExtension();
-
-        if (true === empty($mcrypt_ext)) {
-            debuglog('[Error] In Bitpay plugin, bitpay.merchant.php::gateway_bitpay(): The BitPay plugin could not create a new McryptExtension object.');
-            throw new \Exception('An error occurred!  The BitPay plugin could not create a new McryptExtension object.');
-        }
-
         $fingerprint = substr(sha1(sha1(__DIR__)), 0, 24);
 
         //Use token that is in_use and with facade = pos for generating invoices
@@ -667,13 +620,7 @@ function gateway_bitpay($seperator, $sessionid)
 
         $network = ($row[0]->network === 'Livenet') ? new \Bitpay\Network\Livenet() : new \Bitpay\Network\Testnet();
         $row_id  = $row[0]->id;
-
         $adapter = new \Bitpay\Client\Adapter\CurlAdapter();
-
-        if (true === empty($adapter)) {
-            debuglog('[Error] In Bitpay plugin, bitpay.merchant.php::gateway_bitpay(): The BitPay plugin could not create a new CurlAdapter object.');
-            throw new \Exception('An error occurred!  The BitPay plugin could not create a new CurlAdapter object.');
-        }
 
         // This grabs the purchase log id from
         // the database that refers to the $sessionid
@@ -712,11 +659,6 @@ function gateway_bitpay($seperator, $sessionid)
          */
         $buyer = new \Bitpay\Buyer();
 
-        if (true === empty($buyer)) {
-            debuglog('[Error] In Bitpay plugin, bitpay.merchant.php::gateway_bitpay(): The BitPay plugin could not create a new Buyer object.');
-            throw new \Exception('An error occurred!  The BitPay plugin could not create a new Buyer object.');
-        }
-
         // name
         if (true === isset($userinfo['billingfirstname'])) {
             $buyer->setFirstName($userinfo['billingfirstname']);
@@ -749,7 +691,6 @@ function gateway_bitpay($seperator, $sessionid)
 
         // state
         if (true === isset($userinfo['billingstate'])) {
-
             // check if State is a number code used when Selecting country as US
             if (true === ctype_digit($userinfo['billingstate'])) {
                 $buyer->setState(wpsc_get_state_by_id($userinfo['billingstate'], 'code'));
@@ -795,11 +736,6 @@ function gateway_bitpay($seperator, $sessionid)
          */
         $item = new \Bitpay\Item();
 
-        if (true === empty($item)) {
-            debuglog('[Error] In Bitpay plugin, bitpay.merchant.php::gateway_bitpay(): The BitPay plugin could not create a new Item object.');
-            throw new \Exception('An error occurred!  The BitPay plugin could not create a new Item object.');
-        }
-
         // itemDesc, Sku, and Quantity
         if (count($wpsc_cart->cart_items) == 1) {
             $item_incart      = $wpsc_cart->cart_items[0];
@@ -830,11 +766,6 @@ function gateway_bitpay($seperator, $sessionid)
         // Create new BitPay invoice
         $invoice = new \Bitpay\Invoice();
 
-        if (true === empty($invoice)) {
-            debuglog('[Error] In Bitpay plugin, bitpay.merchant.php::gateway_bitpay(): The BitPay plugin could not create a new Invoice object.');
-            throw new \Exception('An error occurred!  The BitPay plugin could not create a new Invoice object.');
-        }
-
         // Add the item to the invoice
         $invoice->setItem($item);
 
@@ -851,13 +782,7 @@ function gateway_bitpay($seperator, $sessionid)
          * BitPay offers services for many different currencies. You will need to
          * configure the currency in which you are selling products with.
          */
-        $currency = new \Bitpay\Currency();
-
-        if (true === empty($currency)) {
-            debuglog('[Error] In Bitpay plugin, bitpay.merchant.php::gateway_bitpay(): The BitPay plugin could not create a new Currency object.');
-            throw new \Exception('An error occurred!  The BitPay plugin could not create a new Currency object.');
-        }
-
+        $currency      = new \Bitpay\Currency();
         $currencyId    = get_option('currency_type');
         $currency_code = $wpdb->get_var($wpdb->prepare("SELECT `code` FROM `" . WPSC_TABLE_CURRENCY_LIST . "` WHERE `id` = %d LIMIT 1", $currencyId));
 
@@ -891,11 +816,6 @@ function gateway_bitpay($seperator, $sessionid)
          * to send requests to BitPay's API
          */
         $client = new \Bitpay\Client\Client();
-
-        if (true === empty($client)) {
-            debuglog('[Error] In Bitpay plugin, bitpay.merchant.php::gateway_bitpay(): The BitPay plugin could not create a new Client object.');
-            throw new \Exception('An error occurred!  The BitPay plugin could not create a new Client object.');
-        }
 
         $client->setAdapter($adapter);
         $client->setNetwork($network);
@@ -964,19 +884,7 @@ function bitpay_callback()
             // Don't trust parameters from the scary internet.
             // Use invoice ID from the $json in  getInvoice($invoice_id) and get status from that.
             $client  = new \Bitpay\Client\Client();
-
-            if (true === empty($client)) {
-                debuglog('[Error] In Bitpay plugin, bitpay.merchant.php::bitpay_callback(): The BitPay plugin could not create a new Client object.');
-                throw new \Exception('An error occurred!  The BitPay plugin could not create a new Client object.');
-            }
-
             $adapter = new \Bitpay\Client\Adapter\CurlAdapter();
-
-            if (true === empty($client)) {
-                debuglog('[Error] In Bitpay plugin, bitpay.merchant.php::bitpay_callback(): The BitPay plugin could not create a new CurlAdapter object.');
-                throw new \Exception('An error occurred!  The BitPay plugin could not create a new CurlAdapter object.');
-            }
-
             $network = (strpos($json['url'], 'test') === false) ? new \Bitpay\Network\Livenet() : new \Bitpay\Network\Testnet();
 
             $client->setAdapter($adapter);
