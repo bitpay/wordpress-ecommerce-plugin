@@ -1,4 +1,4 @@
-# Using the BitPay plugin for WordPress e-Commerce
+# Using the BitPay plugin for WordPress (WP) eCommerce
 
 ## Prerequisites
 You must have a BitPay merchant account to use this plugin.  It's free to [sign-up for a BitPay merchant account](https://bitpay.com/start).
@@ -6,14 +6,14 @@ You must have a BitPay merchant account to use this plugin.  It's free to [sign-
 
 ## Installation of .zip file downloaded from bitpay.com
 
-- Install the WordPress e-Commerce plugin from www.getshopped.org. This payment method requires the WP e-Commerce plugin to function because this BitPay file is an extension to the e-Commerce plugin.
+- Install the WP eCommerce plugin from the WordPress Plugin Directory here: https://wordpress.org/plugins/wp-e-commerce/. This payment method requires the WP eCommerce plugin to function because this BitPay file is an extension to the WP eCommerce plugin itself.
 - Don't attempt to install this BitPay file through the WordPress plugins control panel. 
 - Extract the contents of the zip file.
 - Copy the wpsc-merchants folder and paste it into your active WP eCommerce instance (ie `/var/www/html/wordpress/wp-content/plugins/wp-e-commerce`).
 
 ## Installation From GitHub
 
-- Install the WordPress e-Commerce plugin from www.getshopped.org. This payment method requires the WP e-Commerce plugin to function because this BitPay file is an extension to the e-Commerce plugin.
+- Install the WP eCommerce plugin from the Wordpress Plugin Directory here: https://wordpress.org/plugins/wp-e-commerce/. This payment method requires the WP eCommerce plugin to function because this BitPay file is an extension to the WP eCommerce plugin itself.
 - Don't attempt to install this BitPay file through the WordPress plugins control panel. 
 - Clone this repository anywhere onto your server.
 - Open up your Terminal
@@ -25,7 +25,7 @@ You must have a BitPay merchant account to use this plugin.  It's free to [sign-
 
 ## Configuration
 
-* Log into the WordPress admin panel, click Settings > Store > Payments (assuming you've already installed WP e-Commerce plugin).
+* Log into the WordPress admin panel, click Settings > Store > Payments (assuming you've already installed WP eCommerce plugin).
 
 * Check the BitPay payment option to activate it and click Save Changes below.
 
@@ -48,7 +48,7 @@ You must have a BitPay merchant account to use this plugin.  It's free to [sign-
 
 ![BTC Invoice](https://raw.githubusercontent.com/aleitner/aleitner.github.io/master/wordpress-ecommerce-plugin-v2/images/Screen%20Shot%202014-11-17%20at%201.06.23%20PM.png)
 
-* Change the Transaction Speed if desired (see information about this in the API documentation at https://bitpay.com/downloads/bitpayApi.pdf).
+* Change the Transaction Speed if desired.  Can be `high`, `medium`, or `low`.  HIGH speed confirmations typically take 5-10 seconds, and can be used for digital goods or low-risk items. LOW speed confirmations take about 1 hour, and should be used for high-value items.
 
 ![BTC Invoice](https://raw.githubusercontent.com/aleitner/aleitner.github.io/master/wordpress-ecommerce-plugin-v2/images/Screen%20Shot%202014-11-17%20at%201.06.38%20PM.png)
 
