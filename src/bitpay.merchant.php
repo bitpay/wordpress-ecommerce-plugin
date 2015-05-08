@@ -296,15 +296,13 @@ function form_bitpay()
         // Protect your data!
         $mcrypt_ext   = new \Bitpay\Crypto\McryptExtension();
         $fingerprint  = substr(sha1(sha1(__DIR__)), 0, 24);
-        $bitpayjsfile = plugins_url('/bitpay/assets/js/bitpay.js', __FILE__);
+        
+        $bitpayjsfile = file_get_contents(plugins_url('/bitpay/assets/js/bitpay.js', __FILE__));
 
-        if (true === file_exists($bitpayjsfile) &&
-            true === is_readable($bitpayjsfile))
-        {
+        if (false !== $bitpayjsfile) {
             // Load Script onto settings page
-            $load_script = file_get_contents($bitpayjsfile);
+            $load_script = $bitpayjsfile;
             $script      = '<script type="text/javascript">' . $load_script . '</script>';
-
             echo $script;
         } else {
             debuglog('[Error] In Bitpay plugin, bitpay.merchant.php::form_bitpay(): The asset file bitpay.js is missing or not readable.');
