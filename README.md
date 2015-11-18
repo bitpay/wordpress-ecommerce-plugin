@@ -21,6 +21,7 @@ To get up and running with our plugin quickly, see the GUIDE here: https://githu
 
 **BitPay Support:**
 
+* Last Cart Version Tested: Wordpress 4.0 WP e-commerce 3.8.14.3
 * [BitPay Labs](https://labs.bitpay.com/c/plugins/wp-ecommerce)
   * Post a question in our discussion forums
 * [GitHub Issues](https://github.com/bitpay/wordpress-ecommerce-plugin/issues)
