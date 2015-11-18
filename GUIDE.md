@@ -1,6 +1,9 @@
 # Using the BitPay plugin for WordPress (WP) eCommerce
 
 ## Prerequisites
+
+* Last Cart Version Tested: Wordpress 4.0 WP e-commerce 3.8.14.3
+
 You must have a BitPay merchant account to use this plugin.  It's free to [sign-up for a BitPay merchant account](https://bitpay.com/start).
 
 
