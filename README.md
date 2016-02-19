@@ -22,11 +22,9 @@ To get up and running with our plugin quickly, see the GUIDE here: https://githu
 **BitPay Support:**
 
 * Last Cart Version Tested: Wordpress 4.0 WP e-commerce 3.8.14.3
-* [BitPay Labs](https://labs.bitpay.com/c/plugins/wp-ecommerce)
-  * Post a question in our discussion forums
 * [GitHub Issues](https://github.com/bitpay/wordpress-ecommerce-plugin/issues)
   * Open an issue if you are having issues with this plugin.
-* [Support](https://support.bitpay.com)
+* [Support](https://help.bitpay.com)
   * BitPay merchant support documentation
 
 **WP eCommerce Support:**
@@ -44,7 +42,6 @@ The latest version of this plugin can always be downloaded from the official Bit
 * Verify that your web server is not blocking POSTs from servers it may not recognize. Double check this on your firewall as well, if one is being used.
 * Check the system error log file (usually the web server error log) for any errors during BitPay payment attempts. If you contact BitPay support, they will ask to see the log file to help diagnose the problem.
 * Check the version of this plugin against the official plugin repository to ensure you are using the latest version. Your issue might have been addressed in a newer version!
-* If all else fails, send an email describing your issue in detail to support@bitpay.com
 
 **NOTE:** When contacting support it will help us if you provide:
 
@@ -55,11 +52,11 @@ The latest version of this plugin can always be downloaded from the official Bit
 
 ## Contribute
 
-Would you like to help with this project?  Great!  You don't have to be a developer, either.  If you've found a bug or have an idea for an improvement, please open an [issue](https://labs.bitpay.com/c/plugins/wp-ecommerce) and tell us about it.
+Would you like to help with this project?  Great!  You don't have to be a developer, either.  If you've found a bug or have an idea for an improvement, please open an [issue](https://github.com/bitpay/wordpress-ecommerce-plugin/issues) and tell us about it.
 
 If you *are* a developer wanting contribute an enhancement, bugfix or other patch to this project, please fork this repository and submit a pull request detailing your changes.  We review all PRs!
 
-This open source project is released under the [MIT license](http://opensource.org/licenses/MIT) which means if you would like to use this project's code in your own project you are free to do so.  Speaking of, if you have used our code in a cool new project we would like to hear about it!  Please send us an [email](mailto:integrations@bitpay.com) or post a new thread on [BitPay Labs](https://labs.bitpay.com).
+This open source project is released under the [MIT license](http://opensource.org/licenses/MIT) which means if you would like to use this project's code in your own project you are free to do so.  Speaking of, if you have used our code in a cool new project we would like to hear about it!  Please send us an [email](mailto:integrations@bitpay.com).
 
 ## License
 
