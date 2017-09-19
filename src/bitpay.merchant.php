@@ -3,7 +3,7 @@
 /**
  * The MIT License (MIT)
  *
- * Copyright (c) 2011-2015 BitPay
+ * Copyright (c) 2011-2014 BitPay
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -38,21 +38,9 @@ if (true === file_exists($autoloader_param) &&
     throw new \Exception('The BitPay payment plugin was not installed correctly or the files are corrupt. Please reinstall the plugin. If this message persists after a reinstall, contact support@bitpay.com with this message.');
 }
 
-// Check version requirement dependencies
-if (false !== bitpay_requirements_check()) {
-    debuglog('[Error] In Bitpay plugin: The server does not meet the minimum requirements to use this plugin.');
-    throw new \Exception('Your server does not meet the minimum requirements to use the BitPay payment plugin. The requirements check returned this error message: ' . bitpay_requirements_check());
-}
 
 // Load upgrade file
-$wordpress_upgrade_file = ABSPATH . 'wp-admin/includes/upgrade.php';
-
-if (true === file_exists($wordpress_upgrade_file) &&
-    true === is_readable($wordpress_upgrade_file))
-{
-    // Load upgrade file
-    require_once $wordpress_upgrade_file;
-}
+//require_once ABSPATH.'wp-admin/includes/upgrade.php';
 
 // Load Javascript from bitpay.js and jquery
 function bitpay_js_init()
@@ -70,7 +58,7 @@ add_action('admin_enqueue_scripts', 'bitpay_js_init');
 $nzshpcrt_gateways[$num] = array(
         'name'                                    => __('Bitcoin Payments by BitPay', 'wpsc'),
         'api_version'                             => 1.0,
-        'image'                                   => WPSC_URL . '/wpsc-merchants/bitpay/assets/img/logo.png',
+        'image'                                   => WPSC_URL.'/wpsc-merchants/bitpay/assets/img/logo.png',
         'has_recurring_billing'                   => false,
         'wp_admin_cannot_cancel'                  => true,
         'display_name'                            => __('Bitcoin', 'wpsc'),
@@ -82,10 +70,6 @@ $nzshpcrt_gateways[$num] = array(
         'function'                                => 'gateway_bitpay',
         );
 
-// The default behavior of PHP is to write
-// error_log() information to the system
-// logged.  Usually, for websites, this is
-// the web server's error log file.
 function debuglog($contents)
 {
     if (true === isset($contents)) {
@@ -104,36 +88,53 @@ function create_table()
 
     // Query for creating Keys Table
     $sql = "CREATE TABLE IF NOT EXISTS `" . $wpdb->prefix . "bitpay_keys` (
-           `id` int(11) not null auto_increment,
-           `private_key` varchar(1000) not null,
-           `public_key` varchar(1000) not null,
-           `sin` varchar(250) not null,
-           `token` varchar(2000) not null,
-           `network` varchar(250) not null,
-           `facade` varchar(250) not null,
-           `user_id` varchar(250) not null,
-           `enable_all` varchar(250) not null,
-           `in_use` varchar(250) not null,
-           `paired` varchar(250) not null,
-           `created_at` datetime not null,
-           PRIMARY KEY (`id`)
-           ) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;";
+       `id` int(11) not null auto_increment,
+       `private_key` varchar(1000) not null,
+       `public_key` varchar(1000) not null,
+       `sin` varchar(250) not null,
+       `token` varchar(2000) not null,
+       `network` varchar(250) not null,
+       `facade` varchar(250) not null,
+       `user_id` varchar(250) not null,
+       `enable_all` varchar(250) not null,
+       `in_use` varchar(250) not null,
+       `paired` varchar(250) not null,
+       `created_at` datetime not null,
+       PRIMARY KEY (`id`)
+       ) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;";
 
     try {
         // execute SQL statement
-        dbDelta($sql);
-
+        //dbDelta($sql);
+        $wpdb->get_results($sql,ARRAY_A) ;
     } catch (\Exception $e) {
-        debuglog('[Error] In Bitpay plugin, bitpay.merchant.php::create_table() function on line ' . $e->getLine() . ', with the error "' . $e->getMessage() . '" .');
+        error_log('[Error] In Bitpay plugin, create_table() function on line ' . $e->getLine() . ', with the error "' . $e->getMessage() . '" .');
         throw $e;
     }
 }
 
 function generate_keys()
 {
-    $private = new \Bitpay\PrivateKey();
-    $public  = new \Bitpay\PublicKey();
-    $sin     = new \Bitpay\SinKey();
+    /**
+     * GENERATING THE KEYS
+     */
+    $private = new \Bitpay\PrivateKey('/tmp/private.key');
+
+    if (true === empty($private)) {
+        throw new \Exception('An error occurred!  The BitPay plugin could not create a new PrivateKey object.');
+    }
+
+    $public = new \Bitpay\PublicKey('/tmp/public.key');
+
+    if (true === empty($public)) {
+        throw new \Exception('An error occurred!  The BitPay plugin could not create a new PublicKey object.');
+    }
+
+    $sin = new \Bitpay\SinKey('/tmp/sin.key');
+
+    if (true === empty($sin)) {
+        throw new \Exception('An error occurred!  The BitPay plugin could not create a new SinKey object.');
+    }
 
     try {
         // Generate Private Key values
@@ -148,7 +149,7 @@ function generate_keys()
         $sin->generate();
 
     } catch (\Exception $e) {
-        debuglog('[Error] In Bitpay plugin, generate_keys() function on line ' . $e->getLine() . ', with the error "' . $e->getMessage() . '" .');
+        error_log('[Error] In Bitpay plugin, generate_keys() function on line ' . $e->getLine() . ', with the error "' . $e->getMessage() . '" .');
         throw $e;
     }
 
@@ -160,21 +161,29 @@ function create_client($network, $public, $private)
     // @var \Bitpay\Client\Client
     $client = new \Bitpay\Client\Client();
 
+    if (true === empty($client)) {
+        throw new \Exception('An error occurred!  The BitPay plugin could not create a new Client object.');
+    }
+
     //Set the network being paired with.
-    $networkClass = 'Bitpay\\Network\\' . $network;
+    $networkClass = 'Bitpay\\Network\\'. $network;
+
+    if (false === class_exists($networkClass)) {
+        throw new \Exception('An error occurred!  The BitPay plugin could not find the "' . $networkClass . '" network.');
+    }
 
     try {
         $client->setNetwork(new $networkClass());
 
         //Set Keys
-        $client->setPublicKey($public);
+        $client->setPublicKey($public); 
         $client->setPrivateKey($private);
 
         // Initialize our network adapter object for cURL
         $client->setAdapter(new Bitpay\Client\Adapter\CurlAdapter());
 
     } catch (\Exception $e) {
-        debuglog('[Error] In Bitpay plugin, create_client() function on line ' . $e->getLine() . ', with the error "' . $e->getMessage() . '" .');
+        error_log('[Error] In Bitpay plugin, create_client() function on line ' . $e->getLine() . ', with the error "' . $e->getMessage() . '" .');
         throw $e;
     }
 
@@ -185,29 +194,30 @@ function pairing($pairing_code, $client, $sin)
 {
     //Create Token
     $label = preg_replace('/[^a-zA-Z0-9 \-\_\.]/', '', get_bloginfo());
-    $label = substr('WP Ecommerce - ' . $label, 0, 59);
+    $label = substr('WP Ecommerce - '.$label, 0, 59);
 
     try {
         // @var \Bitpay\TokenInterface
         $token = $client->createToken(
-            array(
+            [
                 'id'          => (string) $sin,
                 'pairingCode' => $pairing_code,
                 'label'       => $label,
-            )
+              
+            ]
         );
 
         return $token;
 
     } catch (\Exception $e) {
         $error = $e->getMessage();
-        debuglog('[Error] In Bitpay plugin, pairing() function on line ' . $e->getLine() . ', with the error "' . $e->getMessage() . '" .');
+        error_log('[Error] In Bitpay plugin, pairing() function on line ' . $e->getLine() . ', with the error "' . $e->getMessage() . '" .');
 
         update_option('bitpay_error', $error);
 
         unset($_SESSION['WpscGatewayErrorMessage']);
 
-        header('Location: ' . get_site_url() . '/wp-admin/options-general.php?page=wpsc-settings&tab=gateway&payment_gateway_id=wpsc_merchant_bitpay');
+        header('Location: '.get_site_url().'/wp-admin/options-general.php?page=wpsc-settings&tab=gateway&payment_gateway_id=wpsc_merchant_bitpay');
         exit();
     }
 }
@@ -218,7 +228,7 @@ function save_keys($token, $network, $private, $public, $sin)
     global $wpdb;
 
     try {
-        $table_name = $wpdb->prefix . 'bitpay_keys';
+        $table_name = $wpdb->prefix.'bitpay_keys';
 
         //Get Current user's ids
         $user_ID = get_current_user_id();
@@ -258,7 +268,7 @@ function save_keys($token, $network, $private, $public, $sin)
         $wpdb->insert($table_name, $data);
 
     } catch (\Exception $e) {
-        debuglog('[Error] In Bitpay plugin, save_keys() function on line ' . $e->getLine() . ', with the error "' . $e->getMessage() . '" .');
+        error_log('[Error] In Bitpay plugin, save_keys() function on line ' . $e->getLine() . ', with the error "' . $e->getMessage() . '" .');
         throw $e;
     }
 }
@@ -269,12 +279,14 @@ function pair_and_get_token($pairing_code, $network)
         list($private, $public, $sin) = generate_keys();
 
         $client = create_client($network, $public, $private);
+
         $token  = pairing($pairing_code, $client, $sin);
+         // TODO
 
         save_keys($token, $network, $private, $public, $sin);
 
     } catch (\Exception $e) {
-        debuglog('[Error] In Bitpay plugin, pair_and_get_token() function on line ' . $e->getLine() . ', with the error "' . $e->getMessage() . '" .');
+        error_log('[Error] In Bitpay plugin, pair_and_get_token() function on line ' . $e->getLine() . ', with the error "' . $e->getMessage() . '" .');
         throw $e;
     }
 }
@@ -283,37 +295,39 @@ function form_bitpay()
 {
     // Access to Wordpress Database
     global $wpdb;
-
-    try {
+    // Check version requirement dependencies
+    if (bitpay_requirements_check() !== false) {
+        $error = '<div id="message" class="error fade"><p>';
+        $error.=sprintf(__('<strong>BitPay Error</strong>. Your server does not meet the minimum requirements to use the BitPay payment plugin. The requirements check returned this error message: ' . bitpay_requirements_check()));
+        $error . '</p></div>';
+        return $error;
+    } else {
+        try {
         if (get_option('bitpay_error') != null) {
-            $output = '<div style="color:#A94442;background-color:#F2DEDE;background-color:#EBCCD1;text-align:center;padding:15px;border:1px solid transparent;border-radius:4px">' . get_option('bitpay_error') . '</div>';
+            $output = '<div style="color:#A94442;background-color:#F2DEDE;background-color:#EBCCD1;text-align:center;padding:15px;border:1px solid transparent;border-radius:4px">'.get_option('bitpay_error').'</div>';
             update_option('bitpay_error', null);
         }
-
+        else $output = '';
         // Create table for BitPay Storage
         create_table();
 
         // Protect your data!
-        $mcrypt_ext   = new \Bitpay\Crypto\McryptExtension();
-        $fingerprint  = substr(sha1(sha1(__DIR__)), 0, 24);
-        
-        $bitpayjsfile = file_get_contents(plugins_url('/bitpay/assets/js/bitpay.js', __FILE__));
+       
+        $mcrypt_ext  = new \Bitpay\Crypto\McryptExtension();
 
-        if (false !== $bitpayjsfile) {
-            // Load Script onto settings page
-            $load_script = $bitpayjsfile;
-            $script      = '<script type="text/javascript">' . $load_script . '</script>';
-            echo $script;
-        } else {
-            debuglog('[Error] In Bitpay plugin, bitpay.merchant.php::form_bitpay(): The asset file bitpay.js is missing or not readable.');
-            throw new \Exception('An error occurred!  The asset file bitpay.js is missing or not readable.');
-        }
+        $fingerprint = substr(sha1(sha1(__DIR__)), 0, 24);
+
+        // Load Script onto settings page
+        $load_script = file_get_contents(plugins_url('/bitpay/assets/js/bitpay.js', __FILE__));
+        $script = '<script type="text/javascript">'. $load_script.'</script>';
+
+        echo $script;
 
         // Get Current user's ids
         $user_id = get_current_user_id();
 
         // Load table storing the tokens
-        $table_name = $wpdb->prefix . 'bitpay_keys';
+        $table_name = $wpdb->prefix.'bitpay_keys';
 
         // Load the tokens paired by the current user.
         $tablerows1 = $wpdb->get_results("SELECT * FROM {$table_name} WHERE `user_id` = {$user_id}");
@@ -354,15 +368,14 @@ function form_bitpay()
 
             // Enable_all status button
             $enable_for_all = '';
-            $just_me        = '';
+            $just_me = '';
 
             switch ($enable_all) {
                 case 'true':
-                    $disable_for_all = '<button type="submit" name="just_me" value="' . $tablerow->id . '">Disable for All</button>';
+                    $disable_for_all = '<button type="submit" name="just_me" value="'. $tablerow->id.'">Disable for All</button>';
                     break;
                 case 'false':
-                default:
-                    $enable_for_all  = '<button type="submit" name="enable_all" value="' . $tablerow->id . '">Enable for All</button>';
+                    $enable_for_all = '<button type="submit" name="enable_all" value="'. $tablerow->id.'">Enable for All</button>';
                     break;
             }
 
@@ -372,22 +385,21 @@ function form_bitpay()
             if ($is_paired === "true") {
                 switch ($in_use) {
                     case 'true':
-                        $in_use    = 'This token is being used.';
+                        $in_use = 'This token is being used.';
                         $use_color = '<font color="#00FF00">●</font>';
                         break;
                     case 'false':
-                    default:
-                        $in_use    = '<button type="submit" name="in_use" value="' . $tablerow->id . '">Use me</button>';
+                        $in_use = '<button type="submit" name="in_use" value="'. $tablerow->id.'">Use me</button>';
                         $use_color = '<font color="#FF0000">●</font>';
                         break;
                 }
             } else {
-                $in_use    = 'This token is not paired with BitPay any longer.';
+                $in_use = 'This token is not paired with BitPay any longer.';
                 $use_color = '<font color="#FF0000">●</font>';
             }
 
             // Revoke token button
-            $revoke_token = '<button type="submit" id="revoke_key" name="revoke_key" onClick="var result = confirm('. "'Are you sure you wish to revoke the key pair?'" .'); return result;" value="' . $tablerow->id . '"><font color="red">Ø</font></button>';
+            $revoke_token = '<button type="submit" id="revoke_key" name="revoke_key" onClick="var result = confirm('. "'Are you sure you wish to revoke the key pair?'" .'); return result;" value="'. $tablerow->id.'"><font color="red">Ø</font></button>';
 
             // People who did not set the token do
             // not have control over the token.
@@ -399,16 +411,16 @@ function form_bitpay()
 
             // Display the token info on the settings page
             $row .=
-                    '<h3>' . $row_id . ' - ' . $facade . ' - ' . $network . ' ' . $use_color . '</h3>
+                    '<h3>'. $row_id.' - '. $facade.' - '. $network.' '. $use_color.'</h3>
                     <div>
                     <p>
-                    Facade: ' . $facade . '<br />
-                    Network: ' . $network . '<br />
-                    Label: WP Ecommerce - ' . get_site_url() . '<br />
-                    ID: ' . $token_id . '<br />
-                    ' . $enable_for_all . $disable_for_all . '
-                    <div align="right">' . $revoke_token . '</div>
-                    <br />' . $in_use . '
+                    Facade: '. $facade.'<br />
+                    Network: '. $network.'<br />
+                    Label: WP Ecommerce - '.get_site_url().'<br />
+                    ID: '. $token_id.'<br />
+                    '. $enable_for_all. $disable_for_all.'
+                    <div align="right">'. $revoke_token.'</div>
+                    <br />'. $in_use.'
                     </p>
                     </div>';
         }
@@ -419,7 +431,7 @@ function form_bitpay()
 
         if (count($tablerows) > 0) {
             $rows[] = array(
-                'API Tokens<br /><img src="' . WPSC_URL . '/wpsc-merchants/bitpay/assets/img/logo.png" />',
+                'API Tokens<br /><img src="'.WPSC_URL.'/wpsc-merchants/bitpay/assets/img/logo.png" />',
                 $row,
                 '</div>
                 <br /><input name="pairing_code" type="text" placeholder="Pairing Code" /><select name="network"><option value="Livenet">Live</option><option value="Testnet">Test</option></select><input id="generate_keys" type="submit" name="generate_keys" value="Generate" />',
@@ -431,7 +443,7 @@ function form_bitpay()
                 '<p class="description">Generate Keys for pairing. This will overwrite your current keys and you will have to pair again.</p>',
             );
         }
-
+       
         // transaction speed
         $sHigh   = '';
         $sMedium = '';
@@ -445,9 +457,10 @@ function form_bitpay()
                 $sMedium = 'selected="selected"';
                 break;
             case 'low':
-            default:
                 $sLow    = 'selected="selected"';
                 break;
+            default:
+                $sLow    = 'selected="selected"';
         }
 
         $rows[] = array(
@@ -465,12 +478,12 @@ function form_bitpay()
                        );
 
         $output .= '<tr>' .
-                   '<td colspan="2">' .
-                   '<p class="description">' .
-                   '<img src="' . WPSC_URL . '/wpsc-merchants/bitpay/assets/img/bitcoin.png" /><br /><strong>Have more questions? Need assistance? Please visit our website <a href="https://bitpay.com" target="_blank">https://bitpay.com</a> or send an email to <a href="mailto:support@bitpay.com" target="_blank">support@bitpay.com</a> for prompt attention. Thank you for choosing BItPay!</strong>' .
-                   '</p>' .
-                   '</td>' .
-                   '</tr>' . "\n";
+            '<td colspan="2">' .
+                '<p class="description">' .
+                    '<img src="' . WPSC_URL . '/wpsc-merchants/bitpay/assets/img/bitcoin.png" /><br /><strong>Have more questions? Need assistance? Please visit our website <a href="https://bitpay.com" target="_blank">https://bitpay.com</a> or send an email to <a href="mailto:support@bitpay.com" target="_blank">support@bitpay.com</a> for prompt attention. Thank you for choosing BItPay!</strong>' .
+                '</p>' .
+            '</td>' .
+        '</tr>'. "\n";
 
         foreach ($rows as $r) {
             $output .= '<tr> <td>' . $r[0] . '</td> <td>' . $r[1];
@@ -485,9 +498,10 @@ function form_bitpay()
         return $output;
 
     } catch (\Exception $e) {
-        debuglog('[Error] In Bitpay plugin, form_bitpay() function on line ' . $e->getLine() . ', with the error "' . $e->getMessage() . '" .');
+        error_log('[Error] In Bitpay plugin, form_bitpay() function on line ' . $e->getLine() . ', with the error "' . $e->getMessage() . '" .');
         throw $e;
     }
+}
 }
 
 function submit_bitpay()
@@ -497,7 +511,7 @@ function submit_bitpay()
     try {
         // When Generate_Keys buttons is pressed
         if (true === isset($_POST["generate_keys"])) {
-
+           
             // Validate the pairing code is a 7 character string with only letters and numbers
             if (preg_match('/^[a-zA-Z0-9]{7}$/', $_POST['pairing_code'])) {
 
@@ -505,14 +519,13 @@ function submit_bitpay()
                 pair_and_get_token($_POST['pairing_code'], $_POST['network']);
 
             } else {
-                debuglog('[Error] In Bitpay plugin, submit_bitpay(): Invalid pairing code.');
+                error_log("Invalid pairing code");
                 update_option('bitpay_error', "Invalid Pairing Code");
             }
         }
 
         // When Revoke_key button is pressed
         if (true === isset($_POST["revoke_key"])) {
-            debuglog('[Info] In Bitpay plugin, submit_bitpay(): Revoke_key button pressed.');
 
             // Delete the row that with id $_POST["revoke_key"]}
             $id = $_POST["revoke_key"];
@@ -532,7 +545,6 @@ function submit_bitpay()
 
         // When the Disable for all button is pressed
         if (true === isset($_POST["just_me"])) {
-            debuglog('[Info] In Bitpay plugin, submit_bitpay(): Disable for all button pressed.');
 
             // Change enable_all to false where id is $_POST["just_me"]
             $id = $_POST["just_me"];
@@ -542,7 +554,6 @@ function submit_bitpay()
 
         // When the Enable for all button is pressed
         if (true === isset($_POST["enable_all"])) {
-            debuglog('[Info] In Bitpay plugin, submit_bitpay(): Enable for all button pressed.');
 
             // Change enable_all to true
             // where id is $_POST["enable_all"]
@@ -553,7 +564,6 @@ function submit_bitpay()
 
         // When Use me button is pressed
         if (true === isset($_POST["in_use"])) {
-            debuglog('[Info] In Bitpay plugin, submit_bitpay(): Use me button pressed.');
 
             $id = $_POST["in_use"];
 
@@ -579,7 +589,7 @@ function submit_bitpay()
                 if ($_POST[$p] != null) {
                     update_option($p, $_POST[$p]);
                 } else {
-                    add_settings_error($p, 'error', __('The setting ' . $p . ' cannot be blank! Please enter a value for this field', 'wpse'), 'error');
+                    add_settings_error($p, 'error', __('The setting '. $p.' cannot be blank! Please enter a value for this field', 'wpse'), 'error');
                 }
             }
         }
@@ -587,7 +597,7 @@ function submit_bitpay()
         return true;
 
     } catch (\Exception $e) {
-        debuglog('[Error] In Bitpay plugin, form_bitpay() function on line ' . $e->getLine() . ', with the error "' . $e->getMessage() . '" .');
+        error_log('[Error] In Bitpay plugin, form_bitpay() function on line ' . $e->getLine() . ', with the error "' . $e->getMessage() . '" .');
         throw $e;
     }
 }
@@ -604,20 +614,21 @@ function gateway_bitpay($seperator, $sessionid)
 
         //Use token that is in_use and with facade = pos for generating invoices
         $is_a_token_paired = $wpdb->get_var("SELECT COUNT(*) FROM " . $wpdb->prefix . "bitpay_keys WHERE `in_use` = 'true' AND `facade` = 'pos' LIMIT 1");
-
+ 
         if ($is_a_token_paired < 1) {
-            debuglog('[Error] In Bitpay plugin, bitpay.merchant.php::gateway_bitpay(): No tokens are paired so no transactions can be done!');
+            debuglog("No tokens are paired so no transactions can be done!");
             var_dump("Error Processing Transaction. Please try again later. If the problem persists, please contact us at " .get_option('admin_email'));
         }
 
         $row = $wpdb->get_results("SELECT * FROM " . $wpdb->prefix . "bitpay_keys WHERE `in_use` = 'true' AND `facade` = 'pos' LIMIT 1");
-
+   
         $token       = unserialize(base64_decode($mcrypt_ext->decrypt($row[0]->token,       $fingerprint, '00000000')));
         $public_key  = unserialize(base64_decode($mcrypt_ext->decrypt($row[0]->public_key,  $fingerprint, '00000000')));
         $private_key = unserialize(base64_decode($mcrypt_ext->decrypt($row[0]->private_key, $fingerprint, '00000000')));
 
         $network = ($row[0]->network === 'Livenet') ? new \Bitpay\Network\Livenet() : new \Bitpay\Network\Testnet();
         $row_id  = $row[0]->id;
+
         $adapter = new \Bitpay\Client\Adapter\CurlAdapter();
 
         // This grabs the purchase log id from
@@ -627,15 +638,15 @@ function gateway_bitpay($seperator, $sessionid)
                                        "` WHERE `sessionid`= " . $sessionid . " LIMIT 1",
                                        ARRAY_A
                                        );
-
+     
         // This grabs the users info using the
         // $purchase_log from the previous SQL query
         $usersql = "SELECT  `" . WPSC_TABLE_SUBMITED_FORM_DATA . "`.value," .
-                           "`" . WPSC_TABLE_CHECKOUT_FORMS     . "`.`name`," .
-                           "`" . WPSC_TABLE_CHECKOUT_FORMS     . "`.`unique_name` FROM " .
-                           "`" . WPSC_TABLE_CHECKOUT_FORMS     . "` LEFT JOIN " .
+                           "`" . WPSC_TABLE_CHECKOUT_FORMS . "`.`name`," .
+                           "`" . WPSC_TABLE_CHECKOUT_FORMS . "`.`unique_name` FROM " .
+                           "`" . WPSC_TABLE_CHECKOUT_FORMS . "` LEFT JOIN " .
                            "`" . WPSC_TABLE_SUBMITED_FORM_DATA . "` ON " .
-                           "`" . WPSC_TABLE_CHECKOUT_FORMS     . "`.id = " .
+                           "`" . WPSC_TABLE_CHECKOUT_FORMS . "`.id = " .
                            "`" . WPSC_TABLE_SUBMITED_FORM_DATA . "`.`form_id` WHERE " .
                            "`" . WPSC_TABLE_SUBMITED_FORM_DATA . "`.`log_id`='" . $purchase_log['id'] . "'";
 
@@ -666,6 +677,7 @@ function gateway_bitpay($seperator, $sessionid)
             $buyer->setLastName($userinfo['billinglastname']);
         }
 
+
         // address -- remove newlines
         if (true === isset($userinfo['billingaddress'])) {
             $newline  = strpos($userinfo['billingaddress'], "\n");
@@ -689,6 +701,7 @@ function gateway_bitpay($seperator, $sessionid)
 
         // state
         if (true === isset($userinfo['billingstate'])) {
+
             // check if State is a number code used when Selecting country as US
             if (true === ctype_digit($userinfo['billingstate'])) {
                 $buyer->setState(wpsc_get_state_by_id($userinfo['billingstate'], 'code'));
@@ -728,7 +741,7 @@ function gateway_bitpay($seperator, $sessionid)
                 $options[$t] = $userinfo[$f];
             }
         }
-
+ 
         /**
          * Create an Item object that will be used later
          */
@@ -739,19 +752,22 @@ function gateway_bitpay($seperator, $sessionid)
             $item_incart      = $wpsc_cart->cart_items[0];
             $item_id          = $item_incart->product_id;
             $item_sku         = wpsc_product_sku($item_id);
+            $item_description = $item_incart->product_name;
 
-            $item_description = ($item_incart->quantity > 1) ? $item_incart->quantity . ' x ' . $item_incart->product_name  : $item_incart->product_name;
+            if ($item_incart->quantity > 1) {
+                $item_description = $item_incart->quantity.'x '. $item_description;
+            }
 
         } else {
 
             foreach ($wpsc_cart->cart_items as $item_incart) {
-                $quantity           += $item_incart->quantity;
-                $item_id             = $item_incart->product_id;
+                $quantity += $item_incart->quantity;
+                $item_id = $item_incart->product_id;
                 $item_sku_individual = wpsc_product_sku($item_id);
-                $item_sku           .= $item_incart->quantity . ' x ' . $item_sku_individual . ' ';
+                $item_sku .= $item_incart->quantity.'x '. $item_sku_individual.' ';
             }
 
-            $item_description = $quantity . ' items';
+            $item_description = $quantity.' items';
         }
 
         // price
@@ -771,18 +787,19 @@ function gateway_bitpay($seperator, $sessionid)
         $invoice->setBuyer($buyer);
 
         // Configure the rest of the invoice
-        $purchase_log = $wpdb->get_row("SELECT * FROM `" . WPSC_TABLE_PURCHASE_LOGS . "` WHERE `sessionid`= " . $sessionid . " LIMIT 1", ARRAY_A);
+        $purchase_log = $wpdb->get_row("SELECT * FROM `" .WPSC_TABLE_PURCHASE_LOGS. "` WHERE `sessionid`= " . $sessionid. " LIMIT 1", ARRAY_A);
 
         $invoice->setOrderId($purchase_log['id'])
-                ->setNotificationUrl(get_option('siteurl') . '/?bitpay_callback=true');
+                ->setNotificationUrl(get_option('siteurl').'/?bitpay_callback=true');
 
         /**
          * BitPay offers services for many different currencies. You will need to
          * configure the currency in which you are selling products with.
          */
-        $currency      = new \Bitpay\Currency();
+        $currency = new \Bitpay\Currency();
+
         $currencyId    = get_option('currency_type');
-        $currency_code = $wpdb->get_var($wpdb->prepare("SELECT `code` FROM `" . WPSC_TABLE_CURRENCY_LIST . "` WHERE `id` = %d LIMIT 1", $currencyId));
+        $currency_code = $wpdb->get_var($wpdb->prepare("SELECT `code` FROM `" .WPSC_TABLE_CURRENCY_LIST. "` WHERE `id` = %d LIMIT 1", $currencyId));
 
         $currency->setCode($currency_code);
 
@@ -793,7 +810,11 @@ function gateway_bitpay($seperator, $sessionid)
         $invoice->setTransactionSpeed(get_option('bitpay_transaction_speed'));
 
         // Redirect URL
-        $separator = (get_option('permalink_structure') != '') ? '?' : '&';
+        if (get_option('permalink_structure') != '') {
+            $separator = "?";
+        } else {
+            $separator = "&";
+        }
 
         if (true === is_null(get_option('bitpay_redirect'))) {
             update_option('bitpay_redirect', get_site_url());
@@ -801,7 +822,7 @@ function gateway_bitpay($seperator, $sessionid)
 
         $redirect_url = get_option('bitpay_redirect');
 
-        $invoice->setRedirectUrl($redirect_url);
+        $invoice->setRedirectUrl($redirect_url.$separator.'sessionid='.$sessionid);
 
         // PosData
         $invoice->setPosData($sessionid);
@@ -825,42 +846,44 @@ function gateway_bitpay($seperator, $sessionid)
          * returned when you paired your keys.
          */
         $client->setToken($token);
-
+  
         $transaction = true;
 
         // Send invoice
         try {
             $client->createInvoice($invoice);
+          
         } catch (\Exception $e) {
-            debuglog('[Error] In Bitpay plugin, bitpay.merchant.php::gateway_bitpay(): Call to createInvoice() failed with the message: ' . $e->getMessage());
+            debuglog($e->getMessage());
             var_dump("Error Processing Transaction. Please try again later. If the problem persists, please contact us at " .get_option('admin_email'));
             $transaction = false;
         }
 
         if (true === $transaction) {
+              
             $sql = "UPDATE `" .WPSC_TABLE_PURCHASE_LOGS. "` SET `notes`= 'The payment has not been received yet.' WHERE `sessionid`=" . $sessionid;
             $wpdb->query($sql);
             $wpsc_cart->empty_cart();
             unset($_SESSION['WpscGatewayErrorMessage']);
-            header('Location: ' . $invoice->getUrl());
+            header('Location: '. $invoice->getUrl());
         }
-
-        exit();
+die;
+        //exit();
 
     } catch (\Exception $e) {
-        debuglog('[Error] In Bitpay plugin, form_bitpay() function on line ' . $e->getLine() . ', with the error "' . $e->getMessage() . '" .');
+        error_log('[Error] In Bitpay plugin, form_bitpay() function on line ' . $e->getLine() . ', with the error "' . $e->getMessage() . '" .');
         throw $e;
     }
 }
 
 function bitpay_callback()
 {
-    global $wpdb;
 
     try {
         if (isset($_GET['bitpay_callback'])) {
+            global $wpdb;
             $post = file_get_contents("php://input");
-
+            
             if (true === empty($post)) {
                 return array('error' => 'No post data');
             }
@@ -883,7 +906,12 @@ function bitpay_callback()
             // Use invoice ID from the $json in  getInvoice($invoice_id) and get status from that.
             $client  = new \Bitpay\Client\Client();
             $adapter = new \Bitpay\Client\Adapter\CurlAdapter();
-            $network = (strpos($json['url'], 'test') === false) ? new \Bitpay\Network\Livenet() : new \Bitpay\Network\Testnet();
+
+            if (strpos($json['url'], 'test') === false) {
+                $network = new \Bitpay\Network\Livenet();
+            } else {
+                $network = new \Bitpay\Network\Testnet();
+            }
 
             $client->setAdapter($adapter);
             $client->setNetwork($network);
@@ -893,7 +921,7 @@ function bitpay_callback()
             $sessionid = $response->getPosData();
 
             // get buyer email
-            $sql          = "SELECT * FROM `" . WPSC_TABLE_PURCHASE_LOGS . "` WHERE `sessionid`=" . $sessionid;
+            $sql          = $wpdb->prepare("SELECT * FROM `" . WPSC_TABLE_PURCHASE_LOGS . "` WHERE `sessionid`= '%s' ", $sessionid);
             $purchase_log = $wpdb->get_results($sql, ARRAY_A);
 
             $email_form_field = $wpdb->get_var("SELECT `id` FROM `" . WPSC_TABLE_CHECKOUT_FORMS . "` WHERE `type` IN ('email') AND `active` = '1' ORDER BY `checkout_order` ASC LIMIT 1");
@@ -917,9 +945,10 @@ function bitpay_callback()
 
             foreach ($cart_contents as $product) {
                 // shipping for each item
-                $pnp             += $product['pnp'];
+                $pnp += $product['pnp'];
+
                 $message_product .= 'x' . $product['quantity'] . ' ' . $product['name'] . ' - ' . $currency_symbol . ($product['price'] * $product['quantity']) . "\r\n";
-                $subtotal        += $product['price'] * $product['quantity'];
+                $subtotal += $product['price'] * $product['quantity'];
             }
 
             //list subtotal
@@ -927,17 +956,17 @@ function bitpay_callback()
             $message_product .= "\r\n" . 'Subtotal: ' . $currency_symbol . $subtotal . "\r\n";
 
             //list total taxes and total shipping costs in the email
-            $message_product .= 'Taxes: '    . $currency_symbol . $purchase_log[0]['wpec_taxes_total']       . "\r\n";
-            $message_product .= 'Shipping: ' . $currency_symbol . ($purchase_log[0]['base_shipping'] + $pnp) . "\r\n\r\n";
+            $message_product .= 'Taxes: '. $currency_symbol . $purchase_log[0]['wpec_taxes_total'] . "\r\n";
+            $message_product .= 'Shipping: '. $currency_symbol . ($purchase_log[0]['base_shipping'] + $pnp) . "\r\n\r\n";
 
             //display total price in the email
-            $message_product .= 'Total Price: ' . $currency_symbol . $purchase_log[0]['totalprice'];
+            $message_product .= 'Total Price: '. $currency_symbol. $purchase_log[0]['totalprice'];
 
             switch ($response->getStatus()) {
                 //For low and medium transaction speeds, the order status is set to "Order Received" . The customer receives
                 //an initial email stating that the transaction has been paid.
                 case 'paid':
-                    if (true === is_numeric($sessionid)) {
+                    if (is_numeric($sessionid)) {
                         $sql = "UPDATE `" . WPSC_TABLE_PURCHASE_LOGS . "` SET `processed`= '2' WHERE `sessionid`=" . $sessionid;
                         $wpdb->query($sql);
 
@@ -992,13 +1021,12 @@ function bitpay_callback()
                         //false because this is just for email notification
                         transaction_results($sessionid, false);
                     }
-
                     break;
 
                 //The purchase receipt email is sent upon the invoice status changing to "complete", and the order
                 //status is changed to Accepted Payment
                 case 'complete':
-                    if (true === is_numeric($sessionid)) {
+                    if (is_numeric($sessionid)) {
                         $sql = "UPDATE `" . WPSC_TABLE_PURCHASE_LOGS . "` SET `processed`= '3' WHERE `sessionid`=" . $sessionid;
                         $wpdb->query($sql);
 
@@ -1015,16 +1043,12 @@ function bitpay_callback()
                         //false because this is just for email notification
                         transaction_results($sessionid, false);
                     }
-
                     break;
-
-            // END OF switch ($response->getStatus())
             }
-
         }
 
     } catch (\Exception $e) {
-        debuglog('[Error] In Bitpay plugin, form_bitpay() function on line ' . $e->getLine() . ', with the error "' . $e->getMessage() . '".');
+        error_log('[Error] In Bitpay plugin, form_bitpay() function on line ' . $e->getLine() . ', with the error "' . $e->getMessage() . '".');
         throw $e;
     }
 }
@@ -1049,8 +1073,14 @@ function bitpay_requirements_check()
     if (false === extension_loaded('gmp') && false === extension_loaded('bcmath')) {
         $errors[] = 'The BitPay payment plugin requires the GMP or BC Math extension for PHP in order to function. Please contact your web server administrator for assistance.';
     }
-
-    return (false === empty($errors)) ? implode("<br>\n", $errors) : false;
+    // Mcrypt required
+    if (extension_loaded('mcrypt')  === false){
+        $errors[] = 'The BitPay payment plugin requires the MCrypt extension for PHP in order to function. Please contact your web server administrator for assistance.';
+    } 
+    if (false === empty($errors)) {
+        return implode("<br>\n", $errors);
+    } else {
+        return false;
+    }
 }
-
 add_action('init', 'bitpay_callback');

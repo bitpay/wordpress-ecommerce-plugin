@@ -24,7 +24,7 @@ You must have a BitPay merchant account to use this plugin.  It's free to [sign-
 - Once you are inside the repository folder input ./setup username password
 - Replace username with your mysql database username that has access to all tables and replace password with the database password.
 - Once you run this a folder should show up called wpsc-merchants in the repository directory.
-- Copy and Paste wpsc-merchants into your active WP eCommerce instance (ie `/var/www/html/wordpress/wp-content/plugins/wp-e-commerce`).
+- Copy and Paste content of `src` into your active WP eCommerce instance (ie `/var/www/html/wordpress/wp-content/plugins/wp-e-commerce/wpsc-merchants`).
 
 ## Configuration
 
