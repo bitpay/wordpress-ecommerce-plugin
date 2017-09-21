@@ -90,7 +90,7 @@ function create_table()
     $sql = "CREATE TABLE IF NOT EXISTS `" . $wpdb->prefix . "bitpay_keys` (
        `id` int(11) not null auto_increment,
        `private_key` varchar(1000) not null,
-       `public_key` varchar(1000) not null,
+       `public_key` varchar(1500) not null,
        `sin` varchar(250) not null,
        `token` varchar(2000) not null,
        `network` varchar(250) not null,
@@ -240,8 +240,8 @@ function save_keys($token, $network, $private, $public, $sin)
         $enable_all = ($facade === 'pos') ? 'true' : 'false';
 
         //Protect your data!
-        $mcrypt_ext  = new \Bitpay\Crypto\McryptExtension();
-
+        $openssl_ext = new \Bitpay\Crypto\OpenSSLExtension();
+          
         $fingerprint = sha1(sha1(__DIR__));
         $fingerprint = substr($fingerprint, 0, 24);
 
@@ -251,10 +251,10 @@ function save_keys($token, $network, $private, $public, $sin)
 
         //Setting values for database
         $data = array(
-            'private_key' => $mcrypt_ext->encrypt(base64_encode(serialize($private)), $fingerprint, '00000000'),
-            'public_key'  => $mcrypt_ext->encrypt(base64_encode(serialize($public)),  $fingerprint, '00000000'),
+            'private_key' => $openssl_ext->encrypt(base64_encode(serialize($private)), $fingerprint, '1234567890123456'),
+            'public_key'  => $openssl_ext->encrypt(base64_encode(serialize($public)),  $fingerprint, '1234567890123456'),
             'sin'         => $sin,
-            'token'       => $mcrypt_ext->encrypt(base64_encode(serialize($token)),   $fingerprint, '00000000'),
+            'token'       => $openssl_ext->encrypt(base64_encode(serialize($token)),   $fingerprint, '1234567890123456'),
             'network'     => $network,
             'facade'      => $facade,
             'user_id'     => $user_ID,
@@ -313,7 +313,7 @@ function form_bitpay()
 
         // Protect your data!
        
-        $mcrypt_ext  = new \Bitpay\Crypto\McryptExtension();
+        $openssl_ext = new \Bitpay\Crypto\OpenSSLExtension();
 
         $fingerprint = substr(sha1(sha1(__DIR__)), 0, 24);
 
@@ -352,7 +352,7 @@ function form_bitpay()
             $network = $tablerow->network;
 
             // Get the token Object
-            $token = unserialize(base64_decode($mcrypt_ext->decrypt($tablerow->token, $fingerprint, '00000000')));
+            $token = unserialize(base64_decode($openssl_ext->decrypt($tablerow->token, $fingerprint, '1234567890123456')));
 
             // Get the token id
             $token_id = $token->getToken();
@@ -512,8 +512,10 @@ function submit_bitpay()
         // When Generate_Keys buttons is pressed
         if (true === isset($_POST["generate_keys"])) {
            
+            error_log(print_r($_POST['pairing_code'], true).', network: '.print_r($_POST['network'], true));
             // Validate the pairing code is a 7 character string with only letters and numbers
             if (preg_match('/^[a-zA-Z0-9]{7}$/', $_POST['pairing_code'])) {
+               
 
                 // Generate the Keys, Pair, and save to database
                 pair_and_get_token($_POST['pairing_code'], $_POST['network']);
@@ -609,7 +611,7 @@ function gateway_bitpay($seperator, $sessionid)
 
     try {
         // Protect your data!
-        $mcrypt_ext  = new \Bitpay\Crypto\McryptExtension();
+        $openssl_ext = new \Bitpay\Crypto\OpenSSLExtension();
         $fingerprint = substr(sha1(sha1(__DIR__)), 0, 24);
 
         //Use token that is in_use and with facade = pos for generating invoices
@@ -622,9 +624,9 @@ function gateway_bitpay($seperator, $sessionid)
 
         $row = $wpdb->get_results("SELECT * FROM " . $wpdb->prefix . "bitpay_keys WHERE `in_use` = 'true' AND `facade` = 'pos' LIMIT 1");
    
-        $token       = unserialize(base64_decode($mcrypt_ext->decrypt($row[0]->token,       $fingerprint, '00000000')));
-        $public_key  = unserialize(base64_decode($mcrypt_ext->decrypt($row[0]->public_key,  $fingerprint, '00000000')));
-        $private_key = unserialize(base64_decode($mcrypt_ext->decrypt($row[0]->private_key, $fingerprint, '00000000')));
+        $token       = unserialize(base64_decode($openssl_ext->decrypt($row[0]->token,       $fingerprint, '1234567890123456')));
+        $public_key  = unserialize(base64_decode($openssl_ext->decrypt($row[0]->public_key,  $fingerprint, '1234567890123456')));
+        $private_key = unserialize(base64_decode($openssl_ext->decrypt($row[0]->private_key, $fingerprint, '1234567890123456')));
 
         $network = ($row[0]->network === 'Livenet') ? new \Bitpay\Network\Livenet() : new \Bitpay\Network\Testnet();
         $row_id  = $row[0]->id;
@@ -1073,9 +1075,9 @@ function bitpay_requirements_check()
     if (false === extension_loaded('gmp') && false === extension_loaded('bcmath')) {
         $errors[] = 'The BitPay payment plugin requires the GMP or BC Math extension for PHP in order to function. Please contact your web server administrator for assistance.';
     }
-    // Mcrypt required
-    if (extension_loaded('mcrypt')  === false){
-        $errors[] = 'The BitPay payment plugin requires the MCrypt extension for PHP in order to function. Please contact your web server administrator for assistance.';
+    // OpenSSL required
+    if (extension_loaded('openssl')  === false){
+        $errors[] = 'The BitPay payment plugin requires the OpenSSL extension for PHP in order to function. Please contact your web server administrator for assistance.';
     } 
     if (false === empty($errors)) {
         return implode("<br>\n", $errors);
