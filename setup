@@ -4,9 +4,9 @@ rm -rf wpsc-merchants
 mkdir wpsc-merchants
 mkdir wpsc-merchants/bitpay
 mkdir wpsc-merchants/bitpay/lib
-cp -avr src/assets wpsc-merchants/bitpay > /dev/null
-cp -avr src/templates wpsc-merchants/bitpay > /dev/null
-cp src/bitpay.merchant.php wpsc-merchants/ > /dev/null
+cp -r src/bitpay/assets wpsc-merchants/bitpay
+cp -r src/bitpay/templates wpsc-merchants/bitpay
+cp src/bitpay.merchant.php wpsc-merchants/
 cp LICENSE wpsc-merchants/ > /dev/null
 cp README.md wpsc-merchants/ > /dev/null
 cp CHANGELOG wpsc-merchants/ > /dev/null
