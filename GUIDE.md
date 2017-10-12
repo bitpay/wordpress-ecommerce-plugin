@@ -7,24 +7,35 @@
 You must have a BitPay merchant account to use this plugin.  It's free to [sign-up for a BitPay merchant account](https://bitpay.com/start).
 
 
-## Installation of .zip file downloaded from bitpay.com
+## Installation of Wordpress eCommerce Plugin
 
-- Install the WP eCommerce plugin from the WordPress Plugin Directory here: https://wordpress.org/plugins/wp-e-commerce/. This payment method requires the WP eCommerce plugin to function because this BitPay file is an extension to the WP eCommerce plugin itself.
-- Don't attempt to install this BitPay file through the WordPress plugins control panel. 
-- Extract the contents of the zip file.
-- Copy the wpsc-merchants folder and paste it into your active WP eCommerce instance (ie `/var/www/html/wordpress/wp-content/plugins/wp-e-commerce`).
+- Download WP eCommerce plugin from the WordPress Plugin Directory: https://wordpress.org/plugins/wp-e-commerce/. 
+- Extract the contents of the zip file to the [wordpress main directory]/wp-content/plugins/ directory.
+- Log in to your Wordpress and navigate to the Admin dashboard -> Plugins -> Installed Plugins
+- Activate WP eCommerce plugin
 
-## Installation From GitHub
+## Installation of the BitPay plugin for WordPress (WP) eCommerce
 
-- Install the WP eCommerce plugin from the Wordpress Plugin Directory here: https://wordpress.org/plugins/wp-e-commerce/. This payment method requires the WP eCommerce plugin to function because this BitPay file is an extension to the WP eCommerce plugin itself.
-- Don't attempt to install this BitPay file through the WordPress plugins control panel. 
-- Clone this repository anywhere onto your server.
-- Open up your Terminal
-- Change directory into the repository folder that was cloned.
-- Once you are inside the repository folder input ./setup username password
-- Replace username with your mysql database username that has access to all tables and replace password with the database password.
-- Once you run this a folder should show up called wpsc-merchants in the repository directory.
-- Copy and Paste content of `src` into your active WP eCommerce instance (ie `/var/www/html/wordpress/wp-content/plugins/wp-e-commerce/wpsc-merchants`).
+- Clone the repo:
+
+```bash
+$ git clone https://github.com/bitpay/wordpress-ecommerce-plugin
+$ cd wordpress-ecommerce-plugin
+```
+Install the dependencies:
+```bash
+$ curl -sS https://getcomposer.org/installer | php
+$ ./composer.phar install
+```
+Build BitPay Plugin Directory:
+```bash
+$ ./setup
+```
+Copy plugin to the final Directory In Wordpress (change path to your Wordpress instance):
+```bash
+$ cd wpsc-merchants
+$ cp -r * /var/www/wordpress/wp-content/plugins/wp-e-commerce/wpsc-merchants
+```
 
 ## Configuration
 
