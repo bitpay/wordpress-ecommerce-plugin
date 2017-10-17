@@ -318,7 +318,7 @@ function form_bitpay()
         $fingerprint = substr(sha1(sha1(__DIR__)), 0, 24);
 
         // Load Script onto settings page
-        $load_script = file_get_contents(plugins_url('/bitpay/assets/js/bitpay.js', __FILE__));
+        $load_script = file_get_contents(__DIR__ . '/bitpay/assets/js/bitpay.js');
         $script = '<script type="text/javascript">'. $load_script.'</script>';
 
         echo $script;
