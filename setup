@@ -10,5 +10,5 @@ cp src/bitpay.merchant.php wpsc-merchants/
 cp LICENSE wpsc-merchants/ > /dev/null
 cp README.md wpsc-merchants/ > /dev/null
 cp CHANGELOG wpsc-merchants/ > /dev/null
-cp -avr vendor/bitpay/php-client/src/* wpsc-merchants/bitpay/lib > /dev/null
+cp -avR vendor/bitpay/php-client/src/* wpsc-merchants/bitpay/lib > /dev/null
 echo "Setup finished"
