@@ -1,1 +1,9 @@
+[v2.0.4] - 2018-04-18
+* Installation & setup fixes
+* Move from mcrypt -> OpenSSL
+* Using latest PHP library (compatibility with May 1st 2018 breaking API changes)
+
+Tested against Wordpress 4.8.1 WP e-commerce 3.12.2
+
+[v2.0.3] - 2014-12-10
 tested against Wordpress version 4.0 and WP e-Commerce plugin version 3.8.14.3
