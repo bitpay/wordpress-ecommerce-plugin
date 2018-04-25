@@ -14,8 +14,12 @@ You must have a BitPay merchant account to use this plugin.  It's free to [sign-
 - Log in to your Wordpress and navigate to the Admin dashboard -> Plugins -> Installed Plugins
 - Activate WP eCommerce plugin
 
-## Installation of the BitPay plugin for WordPress (WP) eCommerce
+## Installation of the BitPay plugin
+- Download bitpay.zip from https://github.com/bitpay/wordpress-ecommerce-plugin/releases/latest
+- Copy the wpsc-merchants folder into your Wordpress folder
 
+## Installation by cloning the repo
+If you want to clone and compile your own plugin, please use the follow commands:
 - Clone the repo:
 
 ```bash
